@@ -66,10 +66,13 @@
 
                             <!-- USUARIO -->
                             <ImageView
+                                android:id="@+id/btnPerfil"
                                 android:layout_width="48dp"
                                 android:layout_height="48dp"
                                 android:src="@drawable/ic_usuario"
                                 android:contentDescription="Usuario"
+                                android:clickable="true"
+                                android:focusable="true"
                                 app:tint="#FFFFFF" />
 
                             <TextView
@@ -77,7 +80,7 @@
                                 android:layout_height="wrap_content"
                                 android:layout_marginStart="12dp"
                                 android:layout_weight="1"
-                                android:text="U26203407"
+                                android:text="SCC47347496"
                                 android:textColor="#FFFFFF"
                                 android:textSize="14sp" />
 

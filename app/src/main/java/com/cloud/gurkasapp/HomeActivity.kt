@@ -1,5 +1,6 @@
 package com.cloud.gurkasapp
 
+import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.view.View
@@ -16,6 +17,19 @@ class HomeActivity : AppCompatActivity() {
 
         enableEdgeToEdge()
         setContentView(R.layout.activity_home)
+
+        // ==============================
+        // ABRIR PERFIL
+        // ==============================
+        findViewById<View>(R.id.btnPerfil).setOnClickListener {
+
+            val intent = Intent(
+                this,
+                PerfilActivity::class.java
+            )
+
+            startActivity(intent)
+        }
 
         val controller = WindowCompat.getInsetsController(
             window,
