@@ -1,10 +1,12 @@
 package com.cloud.gurkasapp
 
+import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
 import android.widget.EditText
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
@@ -44,14 +46,11 @@ class PerfilActivity : AppCompatActivity() {
         // SUGERENCIA
         // =============================
 
-        val edtSugerencia =
-            findViewById<EditText>(R.id.edtSugerencia)
+        val edtSugerencia = findViewById<EditText>(R.id.edtSugerencia)
 
-        val txtContador =
-            findViewById<TextView>(R.id.txtContadorSugerencia)
+        val txtContador = findViewById<TextView>(R.id.txtContadorSugerencia)
 
-        val btnEnviar =
-            findViewById<TextView>(R.id.btnEnviarSugerencia)
+        val btnEnviar = findViewById<TextView>(R.id.btnEnviarSugerencia)
 
         // CONTADOR DE CARACTERES
         edtSugerencia.addTextChangedListener(
@@ -85,6 +84,16 @@ class PerfilActivity : AppCompatActivity() {
             }
         )
 
+        val imgPerfil = findViewById<ImageView>(R.id.imgPerfil)
+
+        imgPerfil.setOnClickListener {
+
+            val intent = Intent(
+                this, activity_registro_foto::class.java
+            )
+
+            startActivity(intent)
+        }
 
         // =============================
         // VALIDAR Y ENVIAR

@@ -26,12 +26,12 @@
             <!-- HEADER + TARJETA -->
             <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="290dp">
+                android:layout_height="320dp">
 
                 <!-- HEADER -->
                 <FrameLayout
                     android:layout_width="match_parent"
-                    android:layout_height="205dp">
+                    android:layout_height="225dp">
 
                     <!-- FOTO -->
                     <ImageView
@@ -45,7 +45,7 @@
                     <View
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:background="#82D00012" />
+                         />
 
                     <!-- CONTENIDO DEL HEADER -->
                     <LinearLayout
@@ -107,7 +107,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="18dp"
+                            android:layout_marginTop="10dp"
                             android:text="¡Hola!"
                             android:textColor="#FFFFFF"
                             android:textSize="28sp"
@@ -183,7 +183,7 @@
                             android:layout_height="45dp"
                             android:background="@drawable/bg_btn_marcacion"
                             android:gravity="center"
-                            android:text="Ver mi marcación      ›"
+                            android:text="Realizar marcación      ›"
                             android:textColor="#D71920"
                             android:textSize="14sp"
                             android:textStyle="bold" />
@@ -757,6 +757,7 @@
     <!-- ========================================= -->
 
     <LinearLayout
+        android:id="@+id/menuInferior"
         android:layout_width="match_parent"
         android:layout_height="76dp"
         android:layout_gravity="bottom"
@@ -766,7 +767,6 @@
         android:orientation="horizontal"
         android:paddingTop="5dp"
         android:paddingBottom="6dp">
-
 
         <!-- INICIO -->
         <LinearLayout
