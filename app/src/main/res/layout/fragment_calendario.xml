@@ -1,0 +1,352 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<androidx.core.widget.NestedScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+
+    android:id="@+id/scrollCalendario"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+
+    android:background="@android:color/transparent"
+
+    android:clipToPadding="false"
+    android:fillViewport="true"
+    android:scrollbars="none"
+
+    tools:context=".CalendarioFragment">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="20dp"
+        android:paddingTop="10dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="24dp">
+
+
+        <!-- ================================================= -->
+        <!-- TARJETA RESUMEN -->
+        <!-- ================================================= -->
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/cardResumenCalendario"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+
+            android:layout_marginStart="5dp"
+            android:layout_marginEnd="5dp"
+
+            app:cardBackgroundColor="#FFFFFF"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="6dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="18dp"
+                android:paddingTop="18dp"
+                android:paddingEnd="14dp"
+                android:paddingBottom="18dp">
+
+
+                <!-- FECHA ACTUAL -->
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Estás viendo:"
+                        android:textColor="#555555"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:id="@+id/txtMesActual"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="5dp"
+                        android:layout_marginEnd="10dp"
+                        android:maxLines="2"
+                        android:textColor="#D71920"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        tools:text="FechaActual" />
+
+                </LinearLayout>
+
+
+                <!-- BOTÓN HOY -->
+
+                <TextView
+                    android:id="@+id/btnHoy"
+                    android:layout_width="86dp"
+                    android:layout_height="40dp"
+                    android:background="@drawable/bg_borde_rojo"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:text="Ir a Hoy"
+                    android:textColor="#D71920"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+
+        <!-- ================================================= -->
+        <!-- TARJETA CALENDARIO -->
+        <!-- ================================================= -->
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/cardCalendario"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+
+            android:layout_marginStart="5dp"
+            android:layout_marginTop="14dp"
+            android:layout_marginEnd="5dp"
+
+            app:cardBackgroundColor="#FFFFFF"
+            app:cardCornerRadius="18dp"
+            app:cardElevation="5dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingTop="8dp"
+                android:paddingBottom="24dp">
+
+
+                <!-- ================================================= -->
+                <!-- MES ACTUAL -->
+                <!-- ================================================= -->
+
+                <TextView
+                    android:id="@+id/txtTituloMesActual"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:gravity="center"
+                    android:textColor="#34495E"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    tools:text="TituloMesActual" />
+
+
+                <!-- DÍAS DE LA SEMANA -->
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="38dp"
+                    android:orientation="horizontal"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:text="L"
+                        android:textColor="#8A9299"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:text="M"
+                        android:textColor="#8A9299"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:text="M"
+                        android:textColor="#8A9299"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:text="J"
+                        android:textColor="#8A9299"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:text="V"
+                        android:textColor="#8A9299"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:text="S"
+                        android:textColor="#8A9299"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:text="D"
+                        android:textColor="#8A9299"
+                        android:textSize="12sp" />
+
+                </LinearLayout>
+
+
+                <!-- GRID MES ACTUAL -->
+
+                <GridLayout
+                    android:id="@+id/gridMesActual"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:columnCount="7"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
+                    android:paddingBottom="16dp" />
+
+
+                <!-- SEPARADOR -->
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginEnd="16dp"
+                    android:background="#EEEEEE" />
+
+
+                <!-- ================================================= -->
+                <!-- MES ANTERIOR -->
+                <!-- ================================================= -->
+
+                <TextView
+                    android:id="@+id/txtTituloMesAnterior"
+                    android:layout_width="match_parent"
+                    android:layout_height="58dp"
+                    android:gravity="center"
+                    android:textColor="#34495E"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    tools:text="TituloMesAnterior" />
+
+
+                <!-- DÍAS DE LA SEMANA -->
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="38dp"
+                    android:orientation="horizontal"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:text="L"
+                        android:textColor="#8A9299"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:text="M"
+                        android:textColor="#8A9299"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:text="M"
+                        android:textColor="#8A9299"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:text="J"
+                        android:textColor="#8A9299"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:text="V"
+                        android:textColor="#8A9299"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:text="S"
+                        android:textColor="#8A9299"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:text="D"
+                        android:textColor="#8A9299"
+                        android:textSize="12sp" />
+
+                </LinearLayout>
+
+
+                <!-- GRID MES ANTERIOR -->
+
+                <GridLayout
+                    android:id="@+id/gridMesAnterior"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:columnCount="7"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
+                    android:paddingBottom="16dp" />
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+    </LinearLayout>
+
+</androidx.core.widget.NestedScrollView>

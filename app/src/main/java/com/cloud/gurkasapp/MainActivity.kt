@@ -3,333 +3,549 @@ package com.cloud.gurkasapp
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
-import android.text.Editable
-import android.text.TextWatcher
-import android.text.method.HideReturnsTransformationMethod
-import android.text.method.PasswordTransformationMethod
 import android.view.View
-import android.widget.Button
-import android.widget.EditText
-import android.widget.FrameLayout
-import android.widget.ImageButton
-import android.widget.Toast
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.TextView
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.fragment.app.Fragment
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var edtUsuario: EditText
-    private lateinit var edtPassword: EditText
-    private lateinit var btnIngresar: Button
-    private lateinit var loadingOverlay: FrameLayout
+    // =====================================================
+    // VISTAS GENERALES
+    // =====================================================
+
+    private lateinit var headerContent: View
+    private lateinit var statusBarOverlay: View
+    private lateinit var menuInferior: View
+
+    private lateinit var txtTituloPantalla: TextView
+
+    // MENÚ
+    private lateinit var btnInicio: LinearLayout
+    private lateinit var btnCalendario: LinearLayout
+    private lateinit var btnNoticias: LinearLayout
+    private lateinit var btnBoleta: LinearLayout
+
+    // LÍNEAS
+    private lateinit var lineaInicio: View
+    private lateinit var lineaCalendario: View
+    private lateinit var lineaNoticias: View
+    private lateinit var lineaBoleta: View
+
+    // ICONOS
+    private lateinit var iconInicio: ImageView
+    private lateinit var iconCalendario: ImageView
+    private lateinit var iconNoticias: ImageView
+    private lateinit var iconBoleta: ImageView
+
+    // TEXTOS
+    private lateinit var textInicio: TextView
+    private lateinit var textCalendario: TextView
+    private lateinit var textNoticias: TextView
+    private lateinit var textBoleta: TextView
+
+
+    // =====================================================
+    // COLORES
+    // =====================================================
+
+    private val colorRojo = Color.parseColor("#D71920")
+    private val colorNormal = Color.parseColor("#3C414A")
+    private val colorBlanco = Color.WHITE
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // =====================================================
-        // BARRA DE ESTADO TRANSPARENTE
-        // =====================================================
-
-        // Permite que el diseño se dibuje detrás
-        // de la barra donde está la hora, WiFi y batería.
-        WindowCompat.setDecorFitsSystemWindows(
-            window,
-            false
-        )
-
-        // Barra de estado transparente
-        window.statusBarColor = Color.TRANSPARENT
-
-        // Hora, WiFi, señal y batería en color BLANCO
-        val controller = WindowCompat.getInsetsController(
-            window,
-            window.decorView
-        )
-
-        controller.isAppearanceLightStatusBars = false
-
-
-        // =====================================================
-        // CARGAR DISEÑO
-        // =====================================================
+        enableEdgeToEdge()
 
         setContentView(R.layout.activity_main)
 
 
         // =====================================================
-        // VINCULAR CONTROLES
+        // REFERENCIAS
         // =====================================================
 
-        edtUsuario = findViewById(R.id.edtUsuario)
+        val root = findViewById<View>(R.id.main)
 
-        edtPassword = findViewById(R.id.edtPassword)
+        headerContent = findViewById(R.id.headerContent)
 
-        btnIngresar = findViewById(R.id.btnIngresar)
+        statusBarOverlay = findViewById(R.id.statusBarOverlay)
 
-        loadingOverlay = findViewById(R.id.loadingOverlay)
+        menuInferior = findViewById(R.id.menuInferior)
 
-        val btnMostrarPassword =
-            findViewById<ImageButton>(R.id.btnMostrarPassword)
+        txtTituloPantalla = findViewById(R.id.txtTituloPantalla)
 
 
         // =====================================================
-        // MOSTRAR / OCULTAR CONTRASEÑA
+        // BOTONES DEL MENÚ
         // =====================================================
 
-        var passwordVisible = false
+        btnInicio = findViewById(R.id.btnInicio)
+        btnCalendario = findViewById(R.id.btnCalendario)
+        btnNoticias = findViewById(R.id.btnNoticias)
+        btnBoleta = findViewById(R.id.btnBoleta)
 
-        btnMostrarPassword.setOnClickListener {
 
-            if (passwordVisible) {
+        // =====================================================
+        // LÍNEAS
+        // =====================================================
 
-                // Ocultar contraseña
-                edtPassword.transformationMethod =
-                    PasswordTransformationMethod.getInstance()
+        lineaInicio = findViewById(R.id.lineaInicio)
+        lineaCalendario = findViewById(R.id.lineaCalendario)
+        lineaNoticias = findViewById(R.id.lineaNoticias)
+        lineaBoleta = findViewById(R.id.lineaBoleta)
 
-                btnMostrarPassword.setImageResource(
-                    R.drawable.vista
-                )
 
-                btnMostrarPassword.contentDescription =
-                    "Mostrar contraseña"
+        // =====================================================
+        // ICONOS
+        // =====================================================
 
-                passwordVisible = false
+        iconInicio = findViewById(R.id.iconInicio)
+        iconCalendario = findViewById(R.id.iconCalendario)
+        iconNoticias = findViewById(R.id.iconNoticias)
+        iconBoleta = findViewById(R.id.iconBoleta)
 
-            } else {
 
-                // Mostrar contraseña
-                edtPassword.transformationMethod =
-                    HideReturnsTransformationMethod.getInstance()
+        // =====================================================
+        // TEXTOS
+        // =====================================================
 
-                btnMostrarPassword.setImageResource(
-                    R.drawable.esconder
-                )
+        textInicio = findViewById(R.id.textInicio)
+        textCalendario = findViewById(R.id.textCalendario)
+        textNoticias = findViewById(R.id.textNoticias)
+        textBoleta = findViewById(R.id.textBoleta)
 
-                btnMostrarPassword.contentDescription =
-                    "Ocultar contraseña"
 
-                passwordVisible = true
-            }
+        // =====================================================
+        // CONFIGURAR BARRAS DEL SISTEMA
+        // =====================================================
 
-            // Mantener cursor al final
-            edtPassword.setSelection(
-                edtPassword.text.length
+        configurarBarrasSistema(root)
+
+
+        // =====================================================
+        // PERFIL
+        // =====================================================
+
+        findViewById<View>(R.id.btnPerfil).setOnClickListener {
+
+            val intent = Intent(
+                this,
+                PerfilActivity::class.java
             )
+
+            startActivity(intent)
         }
 
 
         // =====================================================
-        // BOTÓN INGRESAR DESACTIVADO AL INICIO
+        // NAVEGACIÓN INFERIOR
         // =====================================================
 
-        btnIngresar.isEnabled = false
-
-
-        // =====================================================
-        // VALIDAR CAMPOS MIENTRAS EL USUARIO ESCRIBE
-        // =====================================================
-
-        val watcher = object : TextWatcher {
-
-            override fun beforeTextChanged(
-                s: CharSequence?,
-                start: Int,
-                count: Int,
-                after: Int
-            ) {
-                // No hacemos nada aquí
-            }
-
-
-            override fun onTextChanged(
-                s: CharSequence?,
-                start: Int,
-                before: Int,
-                count: Int
-            ) {
-
-                validarFormularioEnTiempoReal()
-            }
-
-
-            override fun afterTextChanged(
-                s: Editable?
-            ) {
-                // No hacemos nada aquí
-            }
+        btnInicio.setOnClickListener {
+            mostrarInicio()
         }
 
 
-        edtUsuario.addTextChangedListener(watcher)
+        btnCalendario.setOnClickListener {
+            mostrarCalendario()
+        }
 
-        edtPassword.addTextChangedListener(watcher)
 
+        btnNoticias.setOnClickListener {
+            mostrarNoticias()
+        }
+
+    /*
+                btnBoleta.setOnClickListener {
+
+                    mostrarBoleta()
+                }
+        */
 
         // =====================================================
-        // BOTÓN INGRESAR
+        // PANTALLA INICIAL
         // =====================================================
 
-        btnIngresar.setOnClickListener {
+        if (savedInstanceState == null) {
 
-            if (validarCampos()) {
-
-                // Mostrar pantalla de carga
-                loadingOverlay.visibility =
-                    View.VISIBLE
-
-                loadingOverlay.bringToFront()
-
-                // Desactivar botón mientras carga
-                btnIngresar.isEnabled = false
+            mostrarInicio()
+        }
+    }
 
 
-                // Esperar 5 segundos
-                Handler(
-                    Looper.getMainLooper()
-                ).postDelayed({
+    // =====================================================
+    // MOSTRAR HOME
+    // =====================================================
 
-                    // Ocultar pantalla de carga
-                    loadingOverlay.visibility =
-                        View.GONE
+    private fun mostrarInicio() {
 
+        txtTituloPantalla.text = "¡Hola!"
 
-                    // Mensaje
-                    Toast.makeText(
-                        this,
-                        "Inicio de sesión exitoso",
-                        Toast.LENGTH_SHORT
-                    ).show()
+        seleccionarMenu(
+            menu = MenuSeleccionado.INICIO
+        )
 
+        mostrarFragment(
+            HomeFragment()
+        )
 
-                    // Ir al Home
-                    val intent = Intent(
-                        this,
-                        HomeActivity::class.java
-                    )
-
-                    startActivity(intent)
+        mostrarHeaderRojo()
+    }
 
 
-                    // Cerrar Login
-                    finish()
+    // =====================================================
+    // MOSTRAR CALENDARIO
+    // =====================================================
 
-                }, 5000)
+    private fun mostrarCalendario() {
+
+        txtTituloPantalla.text = "Calendario"
+
+        seleccionarMenu(
+            menu = MenuSeleccionado.CALENDARIO
+        )
+
+        mostrarFragment(
+            CalendarioFragment()
+        )
+
+        mostrarHeaderRojo()
+    }
+
+
+    // =====================================================
+    // MOSTRAR NOTICIAS
+    // =====================================================
+
+    private fun mostrarNoticias() {
+
+        txtTituloPantalla.text = "Noticias"
+
+        seleccionarMenu(
+            menu = MenuSeleccionado.NOTICIAS
+        )
+
+        mostrarFragment(
+            NoticiasFragment()
+        )
+
+        mostrarHeaderRojo()
+    }
+
+
+    // =====================================================
+    // MOSTRAR BOLETA
+    // =====================================================
+/*
+    private fun mostrarBoleta() {
+
+        txtTituloPantalla.text = "Boleta"
+
+        seleccionarMenu(
+            menu = MenuSeleccionado.BOLETA
+        )
+
+        mostrarFragment(
+            BoletaFragment()
+        )
+
+        mostrarHeaderRojo()
+    }
+*/
+
+    // =====================================================
+    // CAMBIAR FRAGMENT
+    // =====================================================
+
+    private fun mostrarFragment(
+        fragment: Fragment
+    ) {
+
+        supportFragmentManager
+            .beginTransaction()
+            .replace(
+                R.id.contenedorFragment,
+                fragment
+            )
+            .commit()
+    }
+
+
+    // =====================================================
+    // ESTADO DEL MENÚ
+    // =====================================================
+
+    private fun seleccionarMenu(
+        menu: MenuSeleccionado
+    ) {
+
+        // -------------------------------------------------
+        // PRIMERO RESETEAMOS TODO
+        // -------------------------------------------------
+
+        lineaInicio.setBackgroundColor(colorBlanco)
+        lineaCalendario.setBackgroundColor(colorBlanco)
+        lineaNoticias.setBackgroundColor(colorBlanco)
+        lineaBoleta.setBackgroundColor(colorBlanco)
+
+
+        iconInicio.setColorFilter(colorNormal)
+        iconCalendario.setColorFilter(colorNormal)
+        iconNoticias.setColorFilter(colorNormal)
+        iconBoleta.setColorFilter(colorNormal)
+
+
+        textInicio.setTextColor(colorNormal)
+        textCalendario.setTextColor(colorNormal)
+        textNoticias.setTextColor(colorNormal)
+        textBoleta.setTextColor(colorNormal)
+
+
+        textInicio.setTypeface(null)
+        textCalendario.setTypeface(null)
+        textNoticias.setTypeface(null)
+        textBoleta.setTypeface(null)
+
+
+        // -------------------------------------------------
+        // MARCAMOS EL SELECCIONADO
+        // -------------------------------------------------
+
+        when (menu) {
+
+            MenuSeleccionado.INICIO -> {
+
+                lineaInicio.setBackgroundColor(colorRojo)
+                iconInicio.setColorFilter(colorRojo)
+                textInicio.setTextColor(colorRojo)
+
+                textInicio.setTypeface(
+                    null,
+                    android.graphics.Typeface.BOLD
+                )
+            }
+
+
+            MenuSeleccionado.CALENDARIO -> {
+
+                lineaCalendario.setBackgroundColor(colorRojo)
+                iconCalendario.setColorFilter(colorRojo)
+                textCalendario.setTextColor(colorRojo)
+
+                textCalendario.setTypeface(
+                    null,
+                    android.graphics.Typeface.BOLD
+                )
+            }
+
+
+            MenuSeleccionado.NOTICIAS -> {
+
+                lineaNoticias.setBackgroundColor(colorRojo)
+                iconNoticias.setColorFilter(colorRojo)
+                textNoticias.setTextColor(colorRojo)
+
+                textNoticias.setTypeface(
+                    null,
+                    android.graphics.Typeface.BOLD
+                )
+            }
+
+
+            MenuSeleccionado.BOLETA -> {
+
+                lineaBoleta.setBackgroundColor(colorRojo)
+                iconBoleta.setColorFilter(colorRojo)
+                textBoleta.setTextColor(colorRojo)
+
+                textBoleta.setTypeface(
+                    null,
+                    android.graphics.Typeface.BOLD
+                )
             }
         }
     }
 
 
-    // =========================================================
-    // VALIDAR FORMULARIO EN TIEMPO REAL
-    // =========================================================
+    // =====================================================
+    // CONFIGURAR STATUS BAR Y NAVIGATION BAR
+    // =====================================================
 
-    private fun validarFormularioEnTiempoReal() {
+    private fun configurarBarrasSistema(
+        root: View
+    ) {
 
-        val usuario =
-            edtUsuario.text.toString().trim()
+        val controller =
+            WindowCompat.getInsetsController(
+                window,
+                window.decorView
+            )
 
-        val password =
-            edtPassword.text.toString()
+
+        // Status bar transparente
+        window.statusBarColor =
+            Color.TRANSPARENT
 
 
-        btnIngresar.isEnabled =
-            usuario.isNotEmpty() &&
-                    password.isNotEmpty()
+        // Navigation bar blanca
+        window.navigationBarColor =
+            Color.WHITE
+
+
+        // Header rojo -> iconos superiores blancos
+        controller.isAppearanceLightStatusBars =
+            false
+
+
+        // Barra inferior -> iconos negros
+        controller.isAppearanceLightNavigationBars =
+            true
+
+
+        ViewCompat.setOnApplyWindowInsetsListener(
+            root
+        ) { _, insets ->
+
+
+            // =================================================
+            // STATUS BAR
+            // =================================================
+
+            val statusInsets =
+                insets.getInsets(
+                    WindowInsetsCompat.Type.statusBars()
+                )
+
+
+            val statusParams =
+                statusBarOverlay.layoutParams
+
+            statusParams.height =
+                statusInsets.top
+
+            statusBarOverlay.layoutParams =
+                statusParams
+
+
+            // Usuario debajo del notch/status bar
+            headerContent.setPadding(
+                dpToPx(22),
+                statusInsets.top + dpToPx(8),
+                dpToPx(22),
+                0
+            )
+
+
+            // =================================================
+            // NAVIGATION BAR
+            // =================================================
+
+            val navigationInsets =
+                insets.getInsets(
+                    WindowInsetsCompat.Type.navigationBars()
+                )
+
+
+            val menuParams =
+                menuInferior.layoutParams
+
+
+            menuParams.height =
+                dpToPx(76) +
+                        navigationInsets.bottom
+
+
+            menuInferior.layoutParams =
+                menuParams
+
+
+            menuInferior.setPadding(
+                0,
+                dpToPx(5),
+                0,
+                navigationInsets.bottom +
+                        dpToPx(6)
+            )
+
+
+            insets
+        }
     }
 
 
-    // =========================================================
-    // VALIDAR CAMPOS
-    // =========================================================
+    // =====================================================
+    // HEADER ROJO
+    // =====================================================
 
-    private fun validarCampos(): Boolean {
+    fun mostrarHeaderRojo() {
 
-        val usuario =
-            edtUsuario.text.toString().trim()
+        statusBarOverlay.setBackgroundColor(
+            Color.TRANSPARENT
+        )
 
-        val password =
-            edtPassword.text.toString()
+        val controller =
+            WindowCompat.getInsetsController(
+                window,
+                window.decorView
+            )
 
-
-        var esValido = true
-
-
-        // =====================================================
-        // VALIDAR USUARIO
-        // =====================================================
-
-        if (usuario.isEmpty()) {
-
-            edtUsuario.error =
-                "Ingresa tu código de usuario"
-
-            edtUsuario.requestFocus()
-
-            esValido = false
-
-        } else if (!validarUsuario(usuario)) {
-
-            edtUsuario.error =
-                "Código de usuario no válido"
-
-            edtUsuario.requestFocus()
-
-            esValido = false
-        }
-
-
-        // =====================================================
-        // VALIDAR CONTRASEÑA
-        // =====================================================
-
-        if (password.isEmpty()) {
-
-            edtPassword.error =
-                "Ingresa tu contraseña"
-
-            if (esValido) {
-
-                edtPassword.requestFocus()
-            }
-
-            esValido = false
-
-        } else if (password.length < 6) {
-
-            edtPassword.error =
-                "La contraseña debe tener mínimo 6 caracteres"
-
-            if (esValido) {
-
-                edtPassword.requestFocus()
-            }
-
-            esValido = false
-        }
-
-
-        return esValido
+        controller.isAppearanceLightStatusBars =
+            false
     }
 
 
-    // =========================================================
-    // VALIDAR FORMATO DEL USUARIO
-    // =========================================================
+    // =====================================================
+    // STATUS BAR BLANCA
+    // =====================================================
 
-    private fun validarUsuario(
-        usuario: String
-    ): Boolean {
+    fun mostrarStatusBarBlanca() {
 
-        // Permite letras y números
-        // Mínimo 3 caracteres
-        // Máximo 20 caracteres
+        statusBarOverlay.setBackgroundColor(
+            Color.WHITE
+        )
 
-        val patron =
-            Regex("""^[a-zA-Z0-9]{3,20}$""")
+        val controller =
+            WindowCompat.getInsetsController(
+                window,
+                window.decorView
+            )
+
+        controller.isAppearanceLightStatusBars =
+            true
+    }
 
 
-        return patron.matches(usuario)
+    // =====================================================
+    // DP -> PX
+    // =====================================================
+
+    private fun dpToPx(
+        dp: Int
+    ): Int {
+
+        return (
+                dp *
+                        resources.displayMetrics.density
+                ).toInt()
+    }
+
+
+    // =====================================================
+    // OPCIONES DEL MENÚ
+    // =====================================================
+
+    private enum class MenuSeleccionado {
+        INICIO,
+        CALENDARIO,
+        NOTICIAS,
+        BOLETA
     }
 }
