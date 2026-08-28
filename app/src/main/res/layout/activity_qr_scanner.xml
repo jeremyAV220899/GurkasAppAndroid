@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000">
+
+    <!-- CÁMARA -->
+    <androidx.camera.view.PreviewView
+        android:id="@+id/previewView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- OSCURECIMIENTO -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#35000000" />
+
+    <!-- TÍTULO -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top"
+        android:layout_marginTop="70dp"
+        android:gravity="center"
+        android:padding="20dp"
+        android:text="Escanea el código QR"
+        android:textColor="#FFFFFF"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+    <!-- ÁREA CENTRAL -->
+    <FrameLayout
+        android:id="@+id/scannerFrame"
+        android:layout_width="290dp"
+        android:layout_height="290dp"
+        android:layout_gravity="center"
+        android:padding="12dp">
+
+        <!-- Marco blanco -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/bg_qr_scanner_frame" />
+
+        <!-- Línea de escaneo -->
+        <View
+            android:id="@+id/scanLine"
+            android:layout_width="match_parent"
+            android:layout_height="3dp"
+            android:layout_gravity="top"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="12dp"
+            android:layout_marginTop="12dp"
+            android:background="#FF1721"
+            android:elevation="5dp" />
+
+    </FrameLayout>
+
+    <!-- MENSAJE -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_marginBottom="90dp"
+        android:gravity="center"
+        android:padding="20dp"
+        android:text="Coloca el código QR dentro del recuadro"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp" />
+
+    <!-- CERRAR -->
+    <TextView
+        android:id="@+id/btnCerrar"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_gravity="top|start"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="45dp"
+        android:gravity="center"
+        android:text="×"
+        android:textColor="#FFFFFF"
+        android:textSize="32sp" />
+
+</FrameLayout>

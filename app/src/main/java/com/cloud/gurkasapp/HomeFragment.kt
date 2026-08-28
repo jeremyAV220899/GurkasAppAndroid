@@ -1,10 +1,10 @@
 package com.cloud.gurkasapp
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.core.widget.NestedScrollView
 import androidx.fragment.app.Fragment
 
 class HomeFragment : Fragment() {
@@ -22,7 +22,23 @@ class HomeFragment : Fragment() {
         )
     }
 
-    private fun dpToPx(dp: Int): Int {
-        return (dp * resources.displayMetrics.density).toInt()
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?
+    ) {
+        super.onViewCreated(view, savedInstanceState)
+
+        val btnRealizarMarcacion =
+            view.findViewById<View>(R.id.btnRealizarMarcacion)
+
+        btnRealizarMarcacion.setOnClickListener {
+
+            val intent = Intent(
+                requireContext(),
+                QrScannerActivity::class.java
+            )
+
+            startActivity(intent)
+        }
     }
 }

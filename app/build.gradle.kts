@@ -40,4 +40,21 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
+
+    // ============================
+    // CAMERAX
+    // ============================
+
+    val cameraxVersion = "1.4.2"
+
+    implementation("androidx.camera:camera-core:$cameraxVersion")
+    implementation("androidx.camera:camera-camera2:$cameraxVersion")
+    implementation("androidx.camera:camera-lifecycle:$cameraxVersion")
+    implementation("androidx.camera:camera-view:$cameraxVersion")
+
+    // ============================
+    // ESCÁNER QR - ML KIT
+    // ============================
+
+    implementation("com.google.mlkit:barcode-scanning:17.3.0")
 }
