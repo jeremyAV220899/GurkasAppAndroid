@@ -379,9 +379,7 @@ class MainActivity : AppCompatActivity() {
     // CONFIGURAR STATUS BAR Y NAVIGATION BAR
     // =====================================================
 
-    private fun configurarBarrasSistema(
-        root: View
-    ) {
+    private fun configurarBarrasSistema(root: View) {
 
         val controller =
             WindowCompat.getInsetsController(
@@ -389,11 +387,9 @@ class MainActivity : AppCompatActivity() {
                 window.decorView
             )
 
-
         // Status bar transparente
         window.statusBarColor =
             Color.TRANSPARENT
-
 
         // Navigation bar blanca
         window.navigationBarColor =
@@ -401,13 +397,11 @@ class MainActivity : AppCompatActivity() {
 
 
         // Header rojo -> iconos superiores blancos
-        controller.isAppearanceLightStatusBars =
-            false
+        controller.isAppearanceLightStatusBars =  false
 
 
         // Barra inferior -> iconos negros
-        controller.isAppearanceLightNavigationBars =
-            true
+        controller.isAppearanceLightNavigationBars =  true
 
 
         ViewCompat.setOnApplyWindowInsetsListener(
@@ -501,26 +495,6 @@ class MainActivity : AppCompatActivity() {
             false
     }
 
-
-    // =====================================================
-    // STATUS BAR BLANCA
-    // =====================================================
-
-    fun mostrarStatusBarBlanca() {
-
-        statusBarOverlay.setBackgroundColor(
-            Color.WHITE
-        )
-
-        val controller =
-            WindowCompat.getInsetsController(
-                window,
-                window.decorView
-            )
-
-        controller.isAppearanceLightStatusBars =
-            true
-    }
 
 
     // =====================================================

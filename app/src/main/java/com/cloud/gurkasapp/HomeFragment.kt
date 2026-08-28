@@ -22,36 +22,7 @@ class HomeFragment : Fragment() {
         )
     }
 
-    override fun onViewCreated(
-        view: View,
-        savedInstanceState: Bundle?
-    ) {
-        super.onViewCreated(view, savedInstanceState)
-
-        val scrollHome =
-            view.findViewById<NestedScrollView>(
-                R.id.scrollHome
-            )
-
-        scrollHome.setOnScrollChangeListener {
-                _,
-                _,
-                scrollY,
-                _,
-                _ ->
-
-            val mainActivity = requireActivity() as MainActivity
-
-            if (scrollY > dpToPx(30)) {
-                mainActivity.mostrarStatusBarBlanca()
-            } else {
-                mainActivity.mostrarHeaderRojo()
-            }
-        }
-    }
-
     private fun dpToPx(dp: Int): Int {
-
         return (dp * resources.displayMetrics.density).toInt()
     }
 }

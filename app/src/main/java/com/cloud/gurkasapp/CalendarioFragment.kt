@@ -77,23 +77,6 @@ class CalendarioFragment : Fragment() {
                 )
             }
         }
-
-        // STATUS BAR
-        scrollCalendario.setOnScrollChangeListener {
-                _,
-                _,
-                scrollY,
-                _,
-                _ ->
-
-            val mainActivity = requireActivity() as MainActivity
-
-            if (scrollY > dp(30)) {
-                mainActivity.mostrarStatusBarBlanca()
-            } else {
-                mainActivity.mostrarHeaderRojo()
-            }
-        }
     }
 
     // ACTUALIZAR CALENDARIO
