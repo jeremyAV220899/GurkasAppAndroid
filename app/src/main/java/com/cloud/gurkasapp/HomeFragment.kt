@@ -35,7 +35,7 @@ class HomeFragment : Fragment() {
 
             val intent = Intent(
                 requireContext(),
-                QrScannerActivity::class.java
+                ReconocimientoActivity::class.java
             )
 
             startActivity(intent)

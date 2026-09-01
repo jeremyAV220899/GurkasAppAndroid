@@ -1,0 +1,315 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#080D0F"
+    tools:context=".ReconocimientoActivity">
+
+    <!-- BOTÓN VOLVER -->
+    <TextView
+        android:id="@+id/btnVolver"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="10dp"
+        android:gravity="center"
+        android:text="‹"
+        android:textColor="#FFFFFF"
+        android:textSize="38sp"
+        android:clickable="true"
+        android:focusable="true"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- TÍTULO FIJO -->
+    <TextView
+        android:id="@+id/txtTitulo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Marcación facial"
+        android:textColor="#FFFFFF"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        app:layout_constraintTop_toTopOf="@id/btnVolver"
+        app:layout_constraintBottom_toBottomOf="@id/btnVolver"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+
+    <!-- TODO EL CONTENIDO QUE PUEDE HACER SCROLL -->
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/scrollContenido"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:fillViewport="true"
+        android:clipToPadding="false"
+        android:paddingBottom="24dp"
+        app:layout_constraintTop_toBottomOf="@id/btnVolver"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp"
+            android:paddingTop="22dp"
+            android:paddingBottom="28dp">
+
+            <!-- CÁMARA -->
+            <FrameLayout
+                android:id="@+id/contenedorCamara"
+                android:layout_width="230dp"
+                android:layout_height="230dp"
+                android:background="@drawable/bg_circulo_camara"
+                android:clipChildren="true"
+                android:clipToOutline="true">
+
+                <androidx.camera.view.PreviewView
+                    android:id="@+id/previewCamara"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+
+            </FrameLayout>
+
+
+            <!-- ESTADO DEL ROSTRO -->
+            <TextView
+                android:id="@+id/txtEstadoRostro"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:gravity="center"
+                android:text="Coloca tu rostro frente a la cámara"
+                android:textColor="#A8ADB0"
+                android:textSize="14sp" />
+
+
+            <!-- TARJETA RESULTADO -->
+            <LinearLayout
+                android:id="@+id/cardResultado"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:background="@drawable/bg_resultado"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:paddingStart="18dp"
+                android:paddingTop="18dp"
+                android:paddingEnd="18dp"
+                android:paddingBottom="18dp">
+
+                <!-- RESULTADO -->
+                <TextView
+                    android:id="@+id/txtResultado"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:text="Esperando marcación"
+                    android:textColor="#27AE60"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+
+                <!-- HORA -->
+                <TextView
+                    android:id="@+id/txtHora"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="15:13"
+                    android:textColor="#FFFFFF"
+                    android:textSize="34sp"
+                    android:textStyle="bold" />
+
+
+                <!-- FECHA -->
+                <TextView
+                    android:id="@+id/txtFecha"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="01/09/2026"
+                    android:textColor="#A8ADB0"
+                    android:textSize="14sp" />
+
+
+                <!-- UBICACIÓN -->
+                <TextView
+                    android:id="@+id/txtUbicacion"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:gravity="center"
+                    android:text="📍 Obteniendo ubicación..."
+                    android:textColor="#8F989B"
+                    android:textSize="12sp" />
+
+                <!-- CÓDIGO UNIDAD / SEDE-->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <!-- CÓDIGO Unidad-->
+                    <TextView
+                        android:id="@+id/txtCodigoUnidad"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:text="Código Unidad: --"
+                        android:textColor="#A8ADB0"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+                    <!-- SEPARACIÓN -->
+                    <View
+                        android:layout_width="18dp"
+                        android:layout_height="1dp" />
+
+                    <!-- CÓDIGO Sede-->
+                    <TextView
+                        android:id="@+id/txtCodigoSede"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:text="Código Sede: --"
+                        android:textColor="#A8ADB0"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                </LinearLayout>
+
+
+                <!-- Unidad -->
+                <TextView
+                    android:id="@+id/txtUnidad"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:text="Unidad: --"
+                    android:textColor="#FFFFFF"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <!-- SEDE -->
+                <TextView
+                    android:id="@+id/txtSede"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:text="Sede: --"
+                    android:textColor="#FFFFFF"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+
+                <!-- DNI + CÓDIGO -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <!-- DNI -->
+                    <TextView
+                        android:id="@+id/txtDni"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:text="DNI: --"
+                        android:textColor="#A8ADB0"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <!-- SEPARACIÓN -->
+                    <View
+                        android:layout_width="18dp"
+                        android:layout_height="1dp" />
+
+                    <!-- NOMBRE -->
+                    <TextView
+                        android:id="@+id/txtEmpleado"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:text="Nombre: --"
+                        android:textColor="#FFFFFF"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                </LinearLayout>
+
+
+                <!-- DNI + CÓDIGO -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <!-- DNI -->
+                    <TextView
+                        android:id="@+id/txtCodigoTipoAsistencia"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:text="Código: --"
+                        android:textColor="#A8ADB0"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <!-- SEPARACIÓN -->
+                    <View
+                        android:layout_width="18dp"
+                        android:layout_height="1dp" />
+
+                    <!-- NOMBRE -->
+                    <TextView
+                        android:id="@+id/txtTipoAsistencia"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:text="Tipo de asistencia: --"
+                        android:textColor="#FFFFFF"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                </LinearLayout>
+
+
+
+            </LinearLayout>
+
+
+            <!-- BOTÓN AL FINAL -->
+            <TextView
+                android:id="@+id/btnEntrada"
+                android:layout_width="match_parent"
+                android:layout_height="58dp"
+                android:layout_marginTop="20dp"
+                android:background="@drawable/bg_btn_entrada"
+                android:gravity="center"
+                android:text="REGISTRAR ENTRADA"
+                android:textColor="#FFFFFF"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:clickable="true"
+                android:focusable="true" />
+
+        </LinearLayout>
+
+    </androidx.core.widget.NestedScrollView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -57,4 +57,11 @@ dependencies {
     // ============================
 
     implementation("com.google.mlkit:barcode-scanning:17.3.0")
+
+    // ============================
+    // API
+    // ============================
+    implementation("com.squareup.retrofit2:retrofit:2.11.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.11.0")
+
 }
