@@ -64,27 +64,52 @@
             android:paddingTop="22dp"
             android:paddingBottom="28dp">
 
-            <!-- CÁMARA -->
+            <!-- ===================================================== -->
+            <!-- CÁMARA - MISMO DISEÑO DEL REGISTRO -->
+            <!-- ===================================================== -->
+
             <FrameLayout
+
                 android:id="@+id/contenedorCamara"
-                android:layout_width="230dp"
-                android:layout_height="230dp"
-                android:background="@drawable/bg_circulo_camara"
-                android:clipChildren="true"
-                android:clipToOutline="true">
 
+                android:layout_width="match_parent"
+                android:layout_height="360dp">
+
+                <!-- CÁMARA -->
                 <androidx.camera.view.PreviewView
-                    android:id="@+id/previewCamara"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent" />
 
-                <!-- FOTO CONGELADA DESPUÉS DEL RECONOCIMIENTO -->
-                <ImageView
-                    android:id="@+id/imgRostroConfirmado"
+                    android:id="@+id/previewCamara"
+
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
+
+                    app:scaleType="fillCenter" />
+
+
+                <!-- MISMA MÁSCARA DEL REGISTRO -->
+                <com.cloud.gurkasapp.FaceOvalOverlay
+
+                    android:id="@+id/faceOverlay"
+
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+
+                    android:clickable="false"
+                    android:focusable="false" />
+
+
+                <!-- IMAGEN CUANDO SE CONFIRMA -->
+                <ImageView
+
+                    android:id="@+id/imgRostroConfirmado"
+
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+
                     android:scaleType="centerCrop"
+
                     android:visibility="gone"
+
                     android:contentDescription="Rostro confirmado" />
 
             </FrameLayout>
@@ -97,7 +122,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
                 android:gravity="center"
-                android:text="Coloca tu rostro frente a la cámara"
+                android:text="Coloca tu rostro dentro del óvalo"
                 android:textColor="#A8ADB0"
                 android:textSize="14sp" />
 

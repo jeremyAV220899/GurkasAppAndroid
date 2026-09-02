@@ -2,6 +2,8 @@ package com.cloud.gurkasapp.facerecognition
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.util.Log
+import org.tensorflow.lite.DataType
 import org.tensorflow.lite.Interpreter
 import java.io.FileInputStream
 import java.nio.ByteBuffer
@@ -9,35 +11,85 @@ import java.nio.ByteOrder
 import java.nio.channels.FileChannel
 import kotlin.math.sqrt
 
+
 class FaceEmbeddingManager(
-    context: Context
+    private val context: Context
 ) {
 
-    private val nombreModelo =
-        "mobile_face_net.tflite"
+    companion object {
 
-    private val interpreter: Interpreter
+        private const val TAG =
+            "ARCFACE_MODEL"
+    }
+
+
+    // =========================================================
+    // MODELO
+    // =========================================================
+
+    private val nombreModelo =
+        "arcface.tflite"
+
+
+    // =========================================================
+    // INTERPRETER
+    // =========================================================
+
+    private var interpreter: Interpreter
+
+
+    // =========================================================
+    // DIMENSIONES DEL MODELO
+    // =========================================================
 
     val inputWidth: Int
+
     val inputHeight: Int
+
     val embeddingDimension: Int
 
 
+    // =========================================================
+    // TIPOS
+    // =========================================================
+
+    private val inputDataType: DataType
+
+    private val outputDataType: DataType
+
+
+    // =========================================================
+    // INIT
+    // =========================================================
+
     init {
 
+        // =====================================================
+        // CARGAR MODELO
+        // =====================================================
+
         val modelo =
-            cargarModelo(
-                context,
+            cargarModeloDesdeAssets(
                 nombreModelo
             )
 
 
+        // =====================================================
+        // OPCIONES
+        // =====================================================
+
         val opciones =
-            Interpreter.Options().apply {
+            Interpreter.Options()
 
-                setNumThreads(4)
-            }
 
+        opciones.setNumThreads(
+            4
+        )
+
+
+        // =====================================================
+        // CREAR INTERPRETER
+        // =====================================================
 
         interpreter =
             Interpreter(
@@ -46,25 +98,52 @@ class FaceEmbeddingManager(
             )
 
 
-        // =============================================
-        // LEER DIMENSIONES DE ENTRADA
-        // =============================================
+        // =====================================================
+        // TENSOR ENTRADA
+        // =====================================================
+
+        val inputTensor =
+            interpreter
+                .getInputTensor(
+                    0
+                )
+
 
         val inputShape =
-            interpreter
-                .getInputTensor(0)
-                .shape()
+            inputTensor.shape()
+
+
+        inputDataType =
+            inputTensor.dataType()
 
 
         if (
-            inputShape.size != 4 ||
-            inputShape[0] != 1 ||
+            inputShape.size != 4
+        ) {
+
+            throw IllegalStateException(
+                "El modelo debe tener entrada [1, alto, ancho, 3]. " +
+                        "Shape recibido: ${inputShape.contentToString()}"
+            )
+        }
+
+
+        if (
+            inputShape[0] != 1
+        ) {
+
+            throw IllegalStateException(
+                "El modelo debe trabajar con batch 1."
+            )
+        }
+
+
+        if (
             inputShape[3] != 3
         ) {
 
             throw IllegalStateException(
-                "Formato de entrada no soportado: " +
-                        inputShape.contentToString()
+                "El modelo debe recibir imagen RGB de 3 canales."
             )
         }
 
@@ -77,234 +156,443 @@ class FaceEmbeddingManager(
             inputShape[2]
 
 
-        // =============================================
-        // LEER DIMENSIÓN DEL EMBEDDING
-        // =============================================
+        // =====================================================
+        // TENSOR SALIDA
+        // =====================================================
+
+        val outputTensor =
+            interpreter
+                .getOutputTensor(
+                    0
+                )
+
 
         val outputShape =
-            interpreter
-                .getOutputTensor(0)
-                .shape()
+            outputTensor.shape()
+
+
+        outputDataType =
+            outputTensor.dataType()
 
 
         if (
-            outputShape.size != 2 ||
+            outputShape.size != 2
+        ) {
+
+            throw IllegalStateException(
+                "La salida debe tener forma [1, N]. " +
+                        "Shape recibido: ${outputShape.contentToString()}"
+            )
+        }
+
+
+        if (
             outputShape[0] != 1
         ) {
 
             throw IllegalStateException(
-                "Formato de salida no soportado: " +
-                        outputShape.contentToString()
+                "La salida debe tener batch 1."
             )
         }
 
 
         embeddingDimension =
             outputShape[1]
-    }
 
 
-    // =================================================
-    // CARGAR MODELO TFLITE
-    // =================================================
+        // =====================================================
+        // VALIDAR FLOAT32
+        // =====================================================
 
-    private fun cargarModelo(
-        context: Context,
-        nombre: String
-    ): ByteBuffer {
-
-        val descriptor =
-            context
-                .assets
-                .openFd(nombre)
-
-
-        FileInputStream(
-            descriptor.fileDescriptor
-        ).use { inputStream ->
-
-            val canal =
-                inputStream.channel
-
-
-            return canal.map(
-                FileChannel.MapMode.READ_ONLY,
-                descriptor.startOffset,
-                descriptor.declaredLength
-            )
-        }
-    }
-
-
-    // =================================================
-    // GENERAR EMBEDDING DEL ROSTRO
-    // =================================================
-
-    fun generarEmbedding(
-        rostroBitmap: Bitmap
-    ): FloatArray {
-
-        // =============================================
-        // ESCALAR AL TAMAÑO QUE PIDE EL MODELO
-        // =============================================
-
-        val bitmapEscalado =
-            Bitmap.createScaledBitmap(
-                rostroBitmap,
-                inputWidth,
-                inputHeight,
-                true
-            )
-
-
-        // =============================================
-        // BUFFER FLOAT32
-        // =============================================
-
-        val inputBuffer =
-            ByteBuffer.allocateDirect(
-                inputWidth *
-                        inputHeight *
-                        3 *
-                        4
-            )
-
-
-        inputBuffer.order(
-            ByteOrder.nativeOrder()
-        )
-
-
-        inputBuffer.rewind()
-
-
-        // =============================================
-        // OBTENER PIXELES
-        // =============================================
-
-        val pixels =
-            IntArray(
-                inputWidth *
-                        inputHeight
-            )
-
-
-        bitmapEscalado.getPixels(
-            pixels,
-            0,
-            inputWidth,
-            0,
-            0,
-            inputWidth,
-            inputHeight
-        )
-
-
-        var pixelIndex = 0
-
-
-        // =============================================
-        // NORMALIZACIÓN RGB
-        //
-        // (valor - 127.5) / 127.5
-        //
-        // rango aproximado:
-        // -1 a 1
-        // =============================================
-
-        for (
-        y in 0 until inputHeight
+        if (
+            inputDataType !=
+            DataType.FLOAT32
         ) {
 
-            for (
-            x in 0 until inputWidth
-            ) {
-
-                val pixel =
-                    pixels[
-                        pixelIndex++
-                    ]
-
-
-                val r =
-                    (
-                            pixel shr 16
-                            ) and 0xFF
-
-
-                val g =
-                    (
-                            pixel shr 8
-                            ) and 0xFF
-
-
-                val b =
-                    pixel and 0xFF
-
-
-                inputBuffer.putFloat(
-                    (r - 127.5f) /
-                            127.5f
-                )
-
-
-                inputBuffer.putFloat(
-                    (g - 127.5f) /
-                            127.5f
-                )
-
-
-                inputBuffer.putFloat(
-                    (b - 127.5f) /
-                            127.5f
-                )
-            }
+            throw IllegalStateException(
+                "La entrada del modelo debe ser FLOAT32. " +
+                        "Tipo recibido: $inputDataType"
+            )
         }
 
 
-        inputBuffer.rewind()
+        if (
+            outputDataType !=
+            DataType.FLOAT32
+        ) {
+
+            throw IllegalStateException(
+                "La salida del modelo debe ser FLOAT32. " +
+                        "Tipo recibido: $outputDataType"
+            )
+        }
 
 
-        // =============================================
-        // SALIDA
-        // =============================================
+        // =====================================================
+        // LOG
+        // =====================================================
 
-        val output =
-            Array(1) {
-
-                FloatArray(
-                    embeddingDimension
-                )
-            }
-
-
-        // =============================================
-        // EJECUTAR MODELO
-        // =============================================
-
-        interpreter.run(
-            inputBuffer,
-            output
+        Log.d(
+            TAG,
+            "Modelo=$nombreModelo"
         )
 
 
-        // =============================================
-        // NORMALIZAR EMBEDDING
-        // =============================================
+        Log.d(
+            TAG,
+            "Entrada=${inputWidth}x${inputHeight}"
+        )
 
-        return normalizarL2(
-            output[0]
+
+        Log.d(
+            TAG,
+            "Dimensión embedding=$embeddingDimension"
+        )
+
+
+        Log.d(
+            TAG,
+            "InputType=$inputDataType | OutputType=$outputDataType"
         )
     }
 
 
-    // =================================================
+    // =========================================================
+    // CARGAR MODELO DESDE ASSETS
+    // =========================================================
+
+    private fun cargarModeloDesdeAssets(
+        nombreArchivo: String
+    ): ByteBuffer {
+
+        val fileDescriptor =
+            context
+                .assets
+                .openFd(
+                    nombreArchivo
+                )
+
+
+        val inputStream =
+            FileInputStream(
+                fileDescriptor.fileDescriptor
+            )
+
+
+        val fileChannel =
+            inputStream.channel
+
+
+        val startOffset =
+            fileDescriptor.startOffset
+
+
+        val declaredLength =
+            fileDescriptor.declaredLength
+
+
+        return fileChannel.map(
+            FileChannel.MapMode.READ_ONLY,
+            startOffset,
+            declaredLength
+        )
+    }
+
+
+    // =========================================================
+    // GENERAR EMBEDDING
+    // =========================================================
+
+    fun generarEmbedding(
+        bitmap: Bitmap
+    ): FloatArray {
+
+        if (
+            bitmap.width <= 0 ||
+            bitmap.height <= 0
+        ) {
+
+            throw IllegalArgumentException(
+                "Bitmap inválido."
+            )
+        }
+
+
+        // =====================================================
+        // ADAPTAR AL TAMAÑO DEL MODELO
+        // =====================================================
+
+        val bitmapEscalado =
+            if (
+                bitmap.width ==
+                inputWidth &&
+                bitmap.height ==
+                inputHeight
+            ) {
+
+                bitmap
+
+            } else {
+
+                Bitmap.createScaledBitmap(
+                    bitmap,
+                    inputWidth,
+                    inputHeight,
+                    true
+                )
+            }
+
+
+        try {
+
+            // =================================================
+            // BUFFER FLOAT32
+            //
+            // 4 bytes por float
+            // RGB = 3 canales
+            // =================================================
+
+            val inputBuffer =
+                ByteBuffer
+                    .allocateDirect(
+                        1 *
+                                inputWidth *
+                                inputHeight *
+                                3 *
+                                4
+                    )
+
+
+            inputBuffer.order(
+                ByteOrder.nativeOrder()
+            )
+
+
+            inputBuffer.rewind()
+
+
+            // =================================================
+            // LEER PIXELES
+            // =================================================
+
+            val pixels =
+                IntArray(
+                    inputWidth *
+                            inputHeight
+                )
+
+
+            bitmapEscalado.getPixels(
+                pixels,
+                0,
+                inputWidth,
+                0,
+                0,
+                inputWidth,
+                inputHeight
+            )
+
+
+            // =================================================
+            // RGB -> FLOAT
+            //
+            // Normalización:
+            //
+            // (pixel - 127.5) / 127.5
+            //
+            // resultado:
+            // -1.0 ... +1.0
+            // =================================================
+
+            var index =
+                0
+
+
+            for (
+            y in 0 until inputHeight
+            ) {
+
+                for (
+                x in 0 until inputWidth
+                ) {
+
+                    val pixel =
+                        pixels[index++]
+
+                    val r =
+                        (
+                                (
+                                        pixel shr 16
+                                        ) and 0xFF
+                                )
+
+                    val g =
+                        (
+                                (
+                                        pixel shr 8
+                                        ) and 0xFF
+                                )
+
+                    val b =
+                        (
+                                pixel and 0xFF
+                                )
+
+
+                    val rf =
+                        (
+                                r -
+                                        127.5f
+                                ) /
+                                127.5f
+
+
+                    val gf =
+                        (
+                                g -
+                                        127.5f
+                                ) /
+                                127.5f
+
+
+                    val bf =
+                        (
+                                b -
+                                        127.5f
+                                ) /
+                                127.5f
+
+
+                    inputBuffer.putFloat(
+                        rf
+                    )
+
+                    inputBuffer.putFloat(
+                        gf
+                    )
+
+                    inputBuffer.putFloat(
+                        bf
+                    )
+                }
+            }
+
+
+            inputBuffer.rewind()
+
+
+            // =================================================
+            // SALIDA
+            // =================================================
+
+            val output =
+                Array(
+                    1
+                ) {
+
+                    FloatArray(
+                        embeddingDimension
+                    )
+                }
+
+
+            // =================================================
+            // EJECUTAR
+            // =================================================
+
+            interpreter.run(
+                inputBuffer,
+                output
+            )
+
+
+            val embedding =
+                output[0]
+
+
+            // =================================================
+            // VALIDAR
+            // =================================================
+
+            if (
+                embedding.size !=
+                embeddingDimension
+            ) {
+
+                throw IllegalStateException(
+                    "Dimensión inesperada del embedding: " +
+                            "${embedding.size}"
+                )
+            }
+
+
+            for (
+            valor in embedding
+            ) {
+
+                if (
+                    valor.isNaN() ||
+                    valor.isInfinite()
+                ) {
+
+                    throw IllegalStateException(
+                        "El embedding contiene NaN o Infinity."
+                    )
+                }
+            }
+
+
+            // =================================================
+            // L2
+            // =================================================
+
+            val normalizado =
+                normalizarL2(
+                    embedding
+                )
+
+
+            Log.d(
+                TAG,
+                "Embedding generado | " +
+                        "Dim=${normalizado.size} | " +
+                        "Norma=${calcularNorma(normalizado)}"
+            )
+
+
+            return normalizado
+
+
+        } finally {
+
+            if (
+                bitmapEscalado !== bitmap &&
+                !bitmapEscalado.isRecycled
+            ) {
+
+                bitmapEscalado.recycle()
+            }
+        }
+    }
+
+
+    // =========================================================
     // NORMALIZACIÓN L2
-    // =================================================
+    // =========================================================
 
     private fun normalizarL2(
         embedding: FloatArray
     ): FloatArray {
+
+        if (
+            embedding.isEmpty()
+        ) {
+
+            throw IllegalArgumentException(
+                "Embedding vacío."
+            )
+        }
+
 
         var suma =
             0.0
@@ -315,8 +603,8 @@ class FaceEmbeddingManager(
         ) {
 
             suma +=
-                valor *
-                        valor
+                valor.toDouble() *
+                        valor.toDouble()
         }
 
 
@@ -324,43 +612,292 @@ class FaceEmbeddingManager(
             sqrt(
                 suma
             )
-                .toFloat()
 
 
         if (
-            norma == 0f
+            norma <=
+            1e-12
         ) {
 
-            return embedding
+            throw IllegalStateException(
+                "La norma del embedding es cero."
+            )
         }
 
 
-        val resultado =
+        return FloatArray(
+            embedding.size
+        ) { i ->
+
+            (
+                    embedding[i] /
+                            norma
+                    ).toFloat()
+        }
+    }
+
+
+    // =========================================================
+    // NORMA
+    // =========================================================
+
+    private fun calcularNorma(
+        embedding: FloatArray
+    ): Float {
+
+        var suma =
+            0.0
+
+
+        for (
+        valor in embedding
+        ) {
+
+            suma +=
+                valor.toDouble() *
+                        valor.toDouble()
+        }
+
+
+        return sqrt(
+            suma
+        ).toFloat()
+    }
+
+
+    // =========================================================
+    // PROMEDIAR EMBEDDINGS
+    //
+    // En reconocimiento normalmente no lo necesitaremos,
+    // pero lo dejamos idéntico al registro.
+    // =========================================================
+
+    fun promediarEmbeddings(
+        embeddings: List<FloatArray>
+    ): FloatArray {
+
+        if (
+            embeddings.isEmpty()
+        ) {
+
+            throw IllegalArgumentException(
+                "No existen embeddings para promediar."
+            )
+        }
+
+
+        val dimension =
+            embeddings[0]
+                .size
+
+
+        if (
+            dimension <= 0
+        ) {
+
+            throw IllegalArgumentException(
+                "Dimensión de embedding inválida."
+            )
+        }
+
+
+        for (
+        embedding in embeddings
+        ) {
+
+            if (
+                embedding.size !=
+                dimension
+            ) {
+
+                throw IllegalArgumentException(
+                    "Todos los embeddings deben tener la misma dimensión."
+                )
+            }
+        }
+
+
+        val promedio =
             FloatArray(
-                embedding.size
+                dimension
             )
 
 
         for (
-        i in embedding.indices
+        embedding in embeddings
         ) {
 
-            resultado[i] =
-                embedding[i] /
-                        norma
+            for (
+            i in embedding.indices
+            ) {
+
+                promedio[i] +=
+                    embedding[i]
+            }
         }
 
 
-        return resultado
+        val cantidad =
+            embeddings.size
+                .toFloat()
+
+
+        for (
+        i in promedio.indices
+        ) {
+
+            promedio[i] /=
+                cantidad
+        }
+
+
+        return normalizarL2(
+            promedio
+        )
     }
 
 
-    // =================================================
-    // CERRAR MODELO
-    // =================================================
+    // =========================================================
+    // SIMILITUD COSENO
+    // =========================================================
+
+    fun similitudCoseno(
+        embedding1: FloatArray,
+        embedding2: FloatArray
+    ): Float {
+
+        if (
+            embedding1.size !=
+            embedding2.size
+        ) {
+
+            throw IllegalArgumentException(
+                "Los embeddings tienen dimensiones diferentes."
+            )
+        }
+
+
+        var producto =
+            0.0
+
+
+        var norma1 =
+            0.0
+
+
+        var norma2 =
+            0.0
+
+
+        for (
+        i in embedding1.indices
+        ) {
+
+            producto +=
+                embedding1[i] *
+                        embedding2[i]
+
+
+            norma1 +=
+                embedding1[i] *
+                        embedding1[i]
+
+
+            norma2 +=
+                embedding2[i] *
+                        embedding2[i]
+        }
+
+
+        val denominador =
+            sqrt(
+                norma1
+            ) *
+                    sqrt(
+                        norma2
+                    )
+
+
+        if (
+            denominador <=
+            1e-12
+        ) {
+
+            return 0f
+        }
+
+
+        return (
+                producto /
+                        denominador
+                ).toFloat()
+    }
+
+
+    // =========================================================
+    // DISTANCIA EUCLIDIANA
+    // =========================================================
+
+    fun distanciaEuclidiana(
+        embedding1: FloatArray,
+        embedding2: FloatArray
+    ): Float {
+
+        if (
+            embedding1.size !=
+            embedding2.size
+        ) {
+
+            throw IllegalArgumentException(
+                "Los embeddings tienen dimensiones diferentes."
+            )
+        }
+
+
+        var suma =
+            0.0
+
+
+        for (
+        i in embedding1.indices
+        ) {
+
+            val diferencia =
+                embedding1[i] -
+                        embedding2[i]
+
+
+            suma +=
+                diferencia *
+                        diferencia
+        }
+
+
+        return sqrt(
+            suma
+        ).toFloat()
+    }
+
+
+    // =========================================================
+    // CERRAR
+    // =========================================================
 
     fun cerrar() {
 
-        interpreter.close()
+        try {
+
+            interpreter.close()
+
+        } catch (
+            e: Exception
+        ) {
+
+            Log.e(
+                TAG,
+                "Error cerrando Interpreter",
+                e
+            )
+        }
     }
 }

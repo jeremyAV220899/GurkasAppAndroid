@@ -66,6 +66,7 @@ class ReconocimientoActivity : AppCompatActivity() {
     private lateinit var previewCamara: PreviewView
     private lateinit var contenedorCamara: FrameLayout
     private lateinit var imgRostroConfirmado: ImageView
+    private lateinit var faceOverlay: FaceOvalOverlay
 
     private lateinit var txtEstadoRostro: TextView
     private lateinit var txtResultado: TextView
@@ -122,9 +123,9 @@ class ReconocimientoActivity : AppCompatActivity() {
 
     private var coincidenciasConsecutivas = 0
 
-    private val umbralCosenoPrueba = 0.985f
-    private val umbralEuclidianaPrueba = 0.18f
-    private val coincidenciasRequeridas = 5
+    private val umbralCosenoPrueba = 0.97f
+    private val umbralEuclidianaPrueba = 0.22f
+    private val coincidenciasRequeridas = 7
 
     // =========================================================
     // DATOS PERSONAL
@@ -238,7 +239,10 @@ class ReconocimientoActivity : AppCompatActivity() {
             findViewById(
                 R.id.contenedorCamara
             )
-
+        faceOverlay =
+            findViewById(
+                R.id.faceOverlay
+            )
         imgRostroConfirmado =
             findViewById(
                 R.id.imgRostroConfirmado
@@ -865,6 +869,57 @@ class ReconocimientoActivity : AppCompatActivity() {
                         return@addOnSuccessListener
                     }
 
+
+                    // =============================================
+                    // DIMENSIONES DE LA IMAGEN ORIENTADA
+                    // =============================================
+
+                    val imageWidth: Int
+                    val imageHeight: Int
+
+                    if (
+                        rotationDegrees == 90 ||
+                        rotationDegrees == 270
+                    ) {
+
+                        imageWidth =
+                            imageProxy.height
+
+                        imageHeight =
+                            imageProxy.width
+
+                    } else {
+
+                        imageWidth =
+                            imageProxy.width
+
+                        imageHeight =
+                            imageProxy.height
+                    }
+
+
+                    // =============================================
+                    // VALIDAR ROSTRO DENTRO DEL ÓVALO
+                    // =============================================
+
+                    if (
+                        !rostroDentroDelOval(
+                            boundingBox,
+                            imageWidth,
+                            imageHeight
+                        )
+                    ) {
+
+                        coincidenciasConsecutivas = 0
+
+                        runOnUiThread {
+
+                            mostrarRostroFueraDelOval()
+                        }
+
+                        return@addOnSuccessListener
+                    }
+
                     try {
 
                         val bitmapRotado =
@@ -1209,7 +1264,7 @@ class ReconocimientoActivity : AppCompatActivity() {
         )
 
         txtEstadoRostro.text =
-            "Coloca tu rostro frente a la cámara"
+            "Coloca tu rostro dentro del óvalo"
 
         txtEstadoRostro.setTextColor(
             Color.parseColor(
@@ -1291,6 +1346,49 @@ class ReconocimientoActivity : AppCompatActivity() {
 
         txtResultado.text =
             "Esperando marcación"
+    }
+
+
+    // =========================================================
+    // ROSTRO FUERA DEL ÓVALO
+    // =========================================================
+
+    private fun mostrarRostroFueraDelOval() {
+
+        if (identidadConfirmada) {
+            return
+        }
+
+        ultimoEstadoFacial =
+            EstadoFacial.ESPERANDO
+
+        actualizarBordeCamara(
+            EstadoFacial.ESPERANDO
+        )
+
+        txtEstadoRostro.text =
+            "Coloca tu rostro dentro del óvalo"
+
+        txtEstadoRostro.setTextColor(
+            Color.parseColor(
+                "#FFC107"
+            )
+        )
+
+        txtResultado.text =
+            "Esperando marcación"
+
+        txtResultado.setTextColor(
+            Color.parseColor(
+                "#27AE60"
+            )
+        )
+
+        txtDni.text =
+            "DNI: --"
+
+        txtEmpleado.text =
+            "Nombre: --"
     }
 
     // =========================================================
@@ -1571,39 +1669,112 @@ class ReconocimientoActivity : AppCompatActivity() {
             when (estado) {
 
                 EstadoFacial.RECONOCIDO ->
+
                     Color.parseColor(
                         "#00C853"
                     )
 
+
                 EstadoFacial.NO_RECONOCIDO ->
+
                     Color.parseColor(
                         "#D50000"
                     )
 
+
                 EstadoFacial.ESPERANDO ->
-                    Color.parseColor(
-                        "#607D8B"
-                    )
+
+                    Color.WHITE
             }
 
-        val drawable =
-            GradientDrawable()
 
-        drawable.shape =
-            GradientDrawable.OVAL
+        runOnUiThread {
 
-        drawable.setColor(
-            Color.TRANSPARENT
-        )
-
-        drawable.setStroke(
-            8,
-            color
-        )
-
-        contenedorCamara.foreground =
-            drawable
+            faceOverlay
+                .cambiarColorBorde(
+                    color
+                )
+        }
     }
+
+    // =========================================================
+    // VALIDAR ROSTRO DENTRO DEL ÓVALO
+    // =========================================================
+
+    private fun rostroDentroDelOval(
+        boundingBox: Rect,
+        imageWidth: Int,
+        imageHeight: Int
+    ): Boolean {
+
+        if (
+            imageWidth <= 0 ||
+            imageHeight <= 0
+        ) {
+            return false
+        }
+
+        // MISMA GEOMETRÍA DEL REGISTRO FACIAL
+        val anchoOval =
+            imageWidth * 0.72f
+
+        val altoOval =
+            anchoOval * 1.35f
+
+        val izquierda =
+            (imageWidth - anchoOval) / 2f
+
+        val arriba =
+            imageHeight * 0.12f
+
+        val derecha =
+            izquierda + anchoOval
+
+        val abajo =
+            arriba + altoOval
+
+        val centroRostroX =
+            boundingBox.exactCenterX()
+
+        val centroRostroY =
+            boundingBox.exactCenterY()
+
+        val centroOvalX =
+            (izquierda + derecha) / 2f
+
+        val centroOvalY =
+            (arriba + abajo) / 2f
+
+        val radioX =
+            anchoOval / 2f
+
+        val radioY =
+            altoOval / 2f
+
+        val dx =
+            (centroRostroX - centroOvalX) / radioX
+
+        val dy =
+            (centroRostroY - centroOvalY) / radioY
+
+        val centroDentro =
+            (dx * dx) + (dy * dy) <= 1f
+
+        val rostroNoMuyGrande =
+            boundingBox.width() < anchoOval * 0.90f &&
+                    boundingBox.height() < altoOval * 0.90f
+
+        val rostroSuficientementeGrande =
+            boundingBox.width() > anchoOval * 0.35f &&
+                    boundingBox.height() > altoOval * 0.35f
+
+        return (
+                centroDentro &&
+                        rostroNoMuyGrande &&
+                        rostroSuficientementeGrande
+                )
+    }
+
 
     // =========================================================
     // ROTAR

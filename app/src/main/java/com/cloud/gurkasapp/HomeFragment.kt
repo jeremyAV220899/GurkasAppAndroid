@@ -90,7 +90,7 @@ class HomeFragment : Fragment() {
             val intent =
                 Intent(
                     requireContext(),
-                    ReconocimientoActivity::class.java
+                    ReconocimientoFacialActivity::class.java
                 )
 
 

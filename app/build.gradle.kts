@@ -88,4 +88,7 @@ dependencies {
     // OkHttp
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
+    implementation("org.tensorflow:tensorflow-lite:2.14.0")
+    implementation("org.tensorflow:tensorflow-lite-select-tf-ops:2.14.0")
+
 }
