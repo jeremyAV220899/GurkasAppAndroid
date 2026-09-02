@@ -2,6 +2,7 @@ package com.cloud.gurkasapp.api
 
 import com.cloud.gurkasapp.models.DatosResponse
 import com.cloud.gurkasapp.models.FeriadoResponse
+import com.cloud.gurkasapp.models.ObtenerPersonalFacialResponse
 import com.cloud.gurkasapp.models.ResumenAsistenciaResponse
 import com.cloud.gurkasapp.models.SedeResponse
 import retrofit2.Call
@@ -32,4 +33,9 @@ interface ApiService {
         @Query("fechafin") fechafin: String,
         @Query("codigo") codigo: String
     ): Call<ResumenAsistenciaResponse>
+
+    @GET("apersonal/ObtenerPersonalFacial")
+    fun obtenerPersonalFacial(
+        @Query("codigo") codigo: String
+    ): Call<ObtenerPersonalFacialResponse>
 }

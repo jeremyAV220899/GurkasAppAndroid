@@ -69,4 +69,23 @@ dependencies {
     // ============================
     implementation("com.github.bumptech.glide:glide:4.16.0")
 
+    // CameraX
+    implementation("androidx.camera:camera-core:1.4.1")
+    implementation("androidx.camera:camera-camera2:1.4.1")
+    implementation("androidx.camera:camera-lifecycle:1.4.1")
+    implementation("androidx.camera:camera-view:1.4.1")
+
+    // ML Kit - detección facial
+    implementation("com.google.mlkit:face-detection:16.1.7")
+
+    // TensorFlow Lite
+    implementation("org.tensorflow:tensorflow-lite:2.17.0")
+
+    // Retrofit
+    implementation("com.squareup.retrofit2:retrofit:2.11.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.11.0")
+
+    // OkHttp
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+
 }
