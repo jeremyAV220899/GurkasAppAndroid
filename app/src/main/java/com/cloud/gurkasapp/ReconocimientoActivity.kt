@@ -21,6 +21,7 @@ import androidx.core.content.ContextCompat
 import com.cloud.gurkasapp.api.RetrofitClient
 import com.cloud.gurkasapp.models.Sede
 import com.cloud.gurkasapp.models.SedeResponse
+import com.cloud.gurkasapp.models.FeriadoResponse
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -39,7 +40,8 @@ class ReconocimientoActivity : AppCompatActivity() {
     private lateinit var txtCodigoUnidad: TextView
     private lateinit var txtSede: TextView
     private lateinit var txtNombreComercial: TextView
-
+    private lateinit var txtCodigoTipoAsistencia: TextView
+    private lateinit var txtTipoAsistencia: TextView
     private var sedeSeleccionada: Sede? = null
 
     private val handler = Handler(Looper.getMainLooper())
@@ -96,6 +98,11 @@ class ReconocimientoActivity : AppCompatActivity() {
         txtNombreComercial =
             findViewById(R.id.txtUnidad)
 
+        txtCodigoTipoAsistencia =
+            findViewById(R.id.txtCodigoTipoAsistencia)
+
+        txtTipoAsistencia =
+            findViewById(R.id.txtTipoAsistencia)
 
         // ==============================
         // VALORES INICIALES
@@ -105,7 +112,8 @@ class ReconocimientoActivity : AppCompatActivity() {
         txtCodigoUnidad.text = "Código Unidad: --"
         txtSede.text = "Sede: --"
         txtNombreComercial.text = "Unidad: --"
-
+        txtCodigoTipoAsistencia.text = "Código: --"
+        txtTipoAsistencia.text = "Tipo de asistencia: --"
 
         // ==============================
         // BOTÓN VOLVER
@@ -125,6 +133,10 @@ class ReconocimientoActivity : AppCompatActivity() {
 
         mostrarFechaHora()
 
+        // IMPORTANTE:
+        // primero se llena txtFecha y después
+        // se manda esa fecha a la API
+        obtenerTipoAsistencia()
 
         // ==============================
         // PERMISO CÁMARA
@@ -690,4 +702,129 @@ class ReconocimientoActivity : AppCompatActivity() {
             actualizarReloj
         )
     }
+
+    private fun obtenerTipoAsistencia() {
+
+        val fechaTexto = txtFecha.text.toString().trim()
+
+        try {
+
+            // txtFecha tiene: dd/MM/yyyy
+            val formatoPantalla =
+                SimpleDateFormat(
+                    "dd/MM/yyyy",
+                    Locale.getDefault()
+                )
+
+            // API necesita: yyyy-MM-dd
+            val formatoApi =
+                SimpleDateFormat(
+                    "yyyy-MM-dd",
+                    Locale.getDefault()
+                )
+
+            val fechaConvertida =
+                formatoPantalla.parse(fechaTexto)
+
+            if (fechaConvertida == null) {
+
+                txtCodigoTipoAsistencia.text =
+                    "Código: --"
+
+                txtTipoAsistencia.text =
+                    "Tipo de asistencia: --"
+
+                return
+            }
+
+            val fechaApi =
+                formatoApi.format(fechaConvertida)
+
+
+            RetrofitClient
+                .apiService
+                .obtenerFeriado(fechaApi)
+                .enqueue(
+
+                    object : Callback<FeriadoResponse> {
+
+                        override fun onResponse(
+                            call: Call<FeriadoResponse>,
+                            response: Response<FeriadoResponse>
+                        ) {
+
+                            if (response.isSuccessful) {
+
+                                val lista =
+                                    response.body()?.lista
+                                        ?: emptyList()
+
+                                if (lista.isNotEmpty()) {
+
+                                    val feriado = lista[0]
+
+                                    txtCodigoTipoAsistencia.text =
+                                        "Código: ${feriado.codigoAsistencia ?: "--"}"
+
+                                    txtTipoAsistencia.text =
+                                        "Tipo de asistencia: ${feriado.tipoAsistencia ?: "--"}"
+
+                                } else {
+
+                                    txtCodigoTipoAsistencia.text =
+                                        "Código: --"
+
+                                    txtTipoAsistencia.text =
+                                        "Tipo de asistencia: --"
+                                }
+
+                            } else {
+
+                                txtCodigoTipoAsistencia.text =
+                                    "Código: --"
+
+                                txtTipoAsistencia.text =
+                                    "Tipo de asistencia: Error"
+
+                                Toast.makeText(
+                                    this@ReconocimientoActivity,
+                                    "Error asistencia: ${response.code()}",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
+
+
+                        override fun onFailure(
+                            call: Call<FeriadoResponse>,
+                            t: Throwable
+                        ) {
+
+                            txtCodigoTipoAsistencia.text =
+                                "Código: --"
+
+                            txtTipoAsistencia.text =
+                                "Tipo de asistencia: Error"
+
+                            Toast.makeText(
+                                this@ReconocimientoActivity,
+                                "Error asistencia: ${t.message}",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
+                    }
+                )
+
+        } catch (e: Exception) {
+
+            e.printStackTrace()
+
+            txtCodigoTipoAsistencia.text =
+                "Código: --"
+
+            txtTipoAsistencia.text =
+                "Tipo de asistencia: --"
+        }
+    }
+
 }

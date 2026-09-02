@@ -5,6 +5,7 @@ import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
+import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
@@ -12,28 +13,63 @@ import android.view.ViewGroup
 import android.widget.GridLayout
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import androidx.core.widget.NestedScrollView
 import androidx.fragment.app.Fragment
+import com.cloud.gurkasapp.api.RetrofitClient
+import com.cloud.gurkasapp.models.ResumenAsistenciaItem
+import com.cloud.gurkasapp.models.ResumenAsistenciaResponse
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 
+
 class CalendarioFragment : Fragment() {
 
 
+    // ==========================================================
     // VISTAS
+    // ==========================================================
+
     private lateinit var txtMesActual: TextView
     private lateinit var txtTituloMesActual: TextView
     private lateinit var txtTituloMesAnterior: TextView
+
     private lateinit var gridMesActual: GridLayout
     private lateinit var gridMesAnterior: GridLayout
+
     private lateinit var btnHoy: TextView
+
     private lateinit var scrollCalendario: NestedScrollView
 
-    // FECHA SELECCIONADA
-    private var fechaSeleccionada: Calendar = Calendar.getInstance()
 
+    // ==========================================================
+    // FECHA SELECCIONADA
+    // ==========================================================
+
+    private var fechaSeleccionada: Calendar =
+        Calendar.getInstance()
+
+
+    // ==========================================================
+    // DATOS RECIBIDOS DE LA API
+    //
+    // EJEMPLO:
+    //
+    // "2026-08-01" -> ResumenAsistenciaItem
+    // ==========================================================
+
+    private val resumenPorFecha =
+        mutableMapOf<String, ResumenAsistenciaItem>()
+
+
+    // ==========================================================
     // CREAR VISTA
+    // ==========================================================
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -47,30 +83,98 @@ class CalendarioFragment : Fragment() {
         )
     }
 
+
+    // ==========================================================
     // VISTA CREADA
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
+    // ==========================================================
 
-        // OBTENER VISTAS
-        txtMesActual = view.findViewById(R.id.txtMesActual)
-        txtTituloMesActual = view.findViewById(R.id.txtTituloMesActual)
-        txtTituloMesAnterior = view.findViewById(R.id.txtTituloMesAnterior)
-        gridMesActual = view.findViewById(R.id.gridMesActual)
-        gridMesAnterior = view.findViewById(R.id.gridMesAnterior)
-        btnHoy = view.findViewById(R.id.btnHoy)
-        scrollCalendario = view.findViewById(R.id.scrollCalendario)
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?
+    ) {
 
+        super.onViewCreated(
+            view,
+            savedInstanceState
+        )
+
+
+        // ======================================================
+        // VISTAS
+        // ======================================================
+
+        txtMesActual =
+            view.findViewById(
+                R.id.txtMesActual
+            )
+
+        txtTituloMesActual =
+            view.findViewById(
+                R.id.txtTituloMesActual
+            )
+
+        txtTituloMesAnterior =
+            view.findViewById(
+                R.id.txtTituloMesAnterior
+            )
+
+        gridMesActual =
+            view.findViewById(
+                R.id.gridMesActual
+            )
+
+        gridMesAnterior =
+            view.findViewById(
+                R.id.gridMesAnterior
+            )
+
+        btnHoy =
+            view.findViewById(
+                R.id.btnHoy
+            )
+
+        scrollCalendario =
+            view.findViewById(
+                R.id.scrollCalendario
+            )
+
+
+        // ======================================================
         // FECHA ACTUAL
-        fechaSeleccionada = Calendar.getInstance()
+        // ======================================================
 
-        // GENERAR CALENDARIOS
+        fechaSeleccionada =
+            Calendar.getInstance()
+
+
+        // ======================================================
+        // PRIMER DIBUJO
+        // SIN DATOS TODAVÍA
+        // ======================================================
+
         actualizarCalendario()
 
-        // IR A HOY
+
+        // ======================================================
+        // CONSULTAR API
+        // ======================================================
+
+        obtenerResumenAsistencia()
+
+
+        // ======================================================
+        // BOTÓN HOY
+        // ======================================================
+
         btnHoy.setOnClickListener {
-            fechaSeleccionada = Calendar.getInstance()
+
+            fechaSeleccionada =
+                Calendar.getInstance()
+
             actualizarCalendario()
+
             scrollCalendario.post {
+
                 scrollCalendario.smoothScrollTo(
                     0,
                     0
@@ -79,25 +183,499 @@ class CalendarioFragment : Fragment() {
         }
     }
 
+
+    // ==========================================================
+    // OBTENER CÓDIGO DEL USUARIO
+    //
+    // LO TOMA DEL txtUsuario DE LA ACTIVITY
+    // ==========================================================
+
+    private fun obtenerCodigoUsuario(): String {
+
+        val txtUsuario =
+            requireActivity()
+                .findViewById<TextView>(
+                    R.id.txtUsuario
+                )
+
+        return txtUsuario
+            .text
+            .toString()
+            .trim()
+    }
+
+
+    // ==========================================================
+    // CONSUMIR API RESUMEN ASISTENCIA
+    // ==========================================================
+
+    private fun obtenerResumenAsistencia() {
+
+
+        // ======================================================
+        // CÓDIGO DEL USUARIO
+        // ======================================================
+
+        val codigo =
+            obtenerCodigoUsuario()
+
+
+        if (codigo.isBlank()) {
+
+            Toast.makeText(
+                requireContext(),
+                "No se encontró el código del usuario",
+                Toast.LENGTH_SHORT
+            ).show()
+
+            return
+        }
+
+
+        // ======================================================
+        // FECHA ACTUAL
+        // ======================================================
+
+        val hoy =
+            Calendar.getInstance()
+
+
+        // ======================================================
+        // PRIMER DÍA DEL MES ANTERIOR
+        // ======================================================
+
+        val inicio =
+            hoy.clone() as Calendar
+
+
+        inicio.add(
+            Calendar.MONTH,
+            -1
+        )
+
+
+        inicio.set(
+            Calendar.DAY_OF_MONTH,
+            1
+        )
+
+
+        // ======================================================
+        // ÚLTIMO DÍA DEL MES ACTUAL
+        // ======================================================
+
+        val fin =
+            hoy.clone() as Calendar
+
+
+        fin.set(
+            Calendar.DAY_OF_MONTH,
+            fin.getActualMaximum(
+                Calendar.DAY_OF_MONTH
+            )
+        )
+
+
+        // ======================================================
+        // FORMATO API
+        // yyyy-MM-dd
+        // ======================================================
+
+        val formatoApi =
+            SimpleDateFormat(
+                "yyyy-MM-dd",
+                Locale.US
+            )
+
+
+        val fechaInicio =
+            formatoApi.format(
+                inicio.time
+            )
+
+
+        val fechaFin =
+            formatoApi.format(
+                fin.time
+            )
+
+
+        // ======================================================
+        // LOG
+        // ======================================================
+
+        Log.d(
+            "CALENDARIO_API",
+            "================================"
+        )
+
+        Log.d(
+            "CALENDARIO_API",
+            "FECHA INICIO: $fechaInicio"
+        )
+
+        Log.d(
+            "CALENDARIO_API",
+            "FECHA FIN: $fechaFin"
+        )
+
+        Log.d(
+            "CALENDARIO_API",
+            "CODIGO: $codigo"
+        )
+
+        Log.d(
+            "CALENDARIO_API",
+            "================================"
+        )
+
+
+        // ======================================================
+        // API
+        // ======================================================
+
+        RetrofitClient
+            .apiService
+            .obtenerResumenAsistencia(
+                fechaInicio,
+                fechaFin,
+                codigo
+            )
+            .enqueue(
+
+                object :
+                    Callback<ResumenAsistenciaResponse> {
+
+
+                    override fun onResponse(
+                        call: Call<ResumenAsistenciaResponse>,
+                        response: Response<ResumenAsistenciaResponse>
+                    ) {
+
+
+                        if (!isAdded) {
+                            return
+                        }
+
+
+                        // ==========================================
+                        // RESPUESTA CORRECTA
+                        // ==========================================
+
+                        if (response.isSuccessful) {
+
+
+                            val lista =
+                                response.body()
+                                    ?.lista
+                                    ?: emptyList()
+
+
+                            Log.d(
+                                "CALENDARIO_API",
+                                "TOTAL REGISTROS: ${lista.size}"
+                            )
+
+
+                            // ======================================
+                            // LIMPIAR MAPA
+                            // ======================================
+
+                            resumenPorFecha.clear()
+
+
+                            // ======================================
+                            // RECORRER RESPUESTA
+                            // ======================================
+
+                            lista.forEach { item ->
+
+
+                                val fechaOriginal =
+                                    item.fecha
+
+
+                                val fechaConvertida =
+                                    normalizarFechaApi(
+                                        fechaOriginal
+                                    )
+
+
+                                Log.d(
+                                    "CALENDARIO_API",
+                                    "ORIGINAL=$fechaOriginal | CONVERTIDA=$fechaConvertida | CODIGO=${item.codigoasistencia}"
+                                )
+
+
+                                if (fechaConvertida != null) {
+
+
+                                    resumenPorFecha[
+                                        fechaConvertida
+                                    ] =
+                                        item
+                                }
+                            }
+
+
+                            // ======================================
+                            // LOG DE MAPA FINAL
+                            // ======================================
+
+                            Log.d(
+                                "CALENDARIO_API",
+                                "MAPA FINAL: ${resumenPorFecha.size}"
+                            )
+
+
+                            resumenPorFecha.forEach {
+
+                                Log.d(
+                                    "CALENDARIO_API",
+                                    "MAPA => ${it.key} = ${it.value.codigoasistencia}"
+                                )
+                            }
+
+
+                            // ======================================
+                            // REDIBUJAR
+                            // ======================================
+
+                            actualizarCalendario()
+
+
+                        } else {
+
+
+                            Log.e(
+                                "CALENDARIO_API",
+                                "ERROR HTTP: ${response.code()}"
+                            )
+
+
+                            Toast.makeText(
+                                requireContext(),
+                                "Error del servidor: ${response.code()}",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
+
+
+                    override fun onFailure(
+                        call: Call<ResumenAsistenciaResponse>,
+                        t: Throwable
+                    ) {
+
+
+                        if (!isAdded) {
+                            return
+                        }
+
+
+                        Log.e(
+                            "CALENDARIO_API",
+                            "ERROR: ${t.message}"
+                        )
+
+
+                        Toast.makeText(
+                            requireContext(),
+                            "Error: ${t.message}",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                }
+            )
+    }
+
+
+    // ==========================================================
+    // NORMALIZAR FECHA API
+    //
+    // SOPORTA:
+    //
+    // 01 de agosto de 2026
+    //
+    // 1 de agosto de 2026
+    //
+    // 2026-08-01
+    //
+    // 2026-08-01T00:00:00
+    //
+    // Y DEVUELVE:
+    //
+    // 2026-08-01
+    // ==========================================================
+
+    private fun normalizarFechaApi(
+        fecha: String?
+    ): String? {
+
+
+        if (fecha.isNullOrBlank()) {
+            return null
+        }
+
+
+        val texto =
+            fecha.trim()
+
+
+        // ======================================================
+        // SI YA VIENE COMO yyyy-MM-dd
+        // ======================================================
+
+        if (
+            texto.matches(
+                Regex(
+                    """\d{4}-\d{2}-\d{2}.*"""
+                )
+            )
+        ) {
+
+            return texto.substring(
+                0,
+                10
+            )
+        }
+
+
+        // ======================================================
+        // VIENE COMO:
+        // 01 de agosto de 2026
+        // ======================================================
+
+        return try {
+
+
+            val formatoEntrada =
+                SimpleDateFormat(
+                    "d 'de' MMMM 'de' yyyy",
+                    Locale(
+                        "es",
+                        "ES"
+                    )
+                )
+
+
+            formatoEntrada.isLenient =
+                false
+
+
+            val formatoSalida =
+                SimpleDateFormat(
+                    "yyyy-MM-dd",
+                    Locale.US
+                )
+
+
+            val fechaConvertida =
+                formatoEntrada.parse(
+                    texto.lowercase(
+                        Locale(
+                            "es",
+                            "ES"
+                        )
+                    )
+                )
+
+
+            if (fechaConvertida != null) {
+
+
+                formatoSalida.format(
+                    fechaConvertida
+                )
+
+
+            } else {
+
+
+                Log.e(
+                    "CALENDARIO_API",
+                    "NO SE PUDO CONVERTIR: $texto"
+                )
+
+
+                null
+            }
+
+
+        } catch (e: Exception) {
+
+
+            Log.e(
+                "CALENDARIO_API",
+                "ERROR CONVIRTIENDO FECHA: $texto",
+                e
+            )
+
+
+            null
+        }
+    }
+
+
+    // ==========================================================
     // ACTUALIZAR CALENDARIO
+    // ==========================================================
+
     private fun actualizarCalendario() {
 
-        /* LOS MESES SIEMPRE SE CALCULAN DESDE LA FECHA REAL DEL DISPOSITIVO */
-        val hoy = Calendar.getInstance()
 
+        val hoy =
+            Calendar.getInstance()
+
+
+        // ======================================================
         // MES ACTUAL
-        val mesActual = hoy.clone() as Calendar
-        mesActual.set(Calendar.DAY_OF_MONTH, 1)
+        // ======================================================
 
+        val mesActual =
+            hoy.clone() as Calendar
+
+
+        mesActual.set(
+            Calendar.DAY_OF_MONTH,
+            1
+        )
+
+
+        // ======================================================
         // MES ANTERIOR
-        val mesAnterior = mesActual.clone() as Calendar
-        mesAnterior.add(Calendar.MONTH, -1)
+        // ======================================================
 
+        val mesAnterior =
+            mesActual.clone() as Calendar
+
+
+        mesAnterior.add(
+            Calendar.MONTH,
+            -1
+        )
+
+
+        // ======================================================
         // TÍTULOS
-        val tituloActual = obtenerTituloMes(mesActual)
-        val tituloAnterior = obtenerTituloMes(mesAnterior)
+        // ======================================================
 
-        // FECHA ACTUAL COMPLETA
+        val tituloActual =
+            obtenerTituloMes(
+                mesActual
+            )
+
+
+        val tituloAnterior =
+            obtenerTituloMes(
+                mesAnterior
+            )
+
+
+        // ======================================================
+        // FECHA SUPERIOR
+        // ======================================================
+
         val formatoFechaActual =
             SimpleDateFormat(
                 "d 'de' MMMM 'del' yyyy",
@@ -107,22 +685,47 @@ class CalendarioFragment : Fragment() {
                 )
             )
 
-        val fechaActualTexto = formatoFechaActual.format(hoy.time)
 
-        // TARJETA SUPERIOR
-        txtMesActual.text = fechaActualTexto
-        // TÍTULO MES ACTUAL
-        txtTituloMesActual.text = tituloActual
-        // TÍTULO MES ANTERIOR
-        txtTituloMesAnterior.text = tituloAnterior
+        txtMesActual.text =
+            formatoFechaActual.format(
+                hoy.time
+            )
 
-        // GENERAR MESES
-        generarMes(calendarioMes = mesActual, grid = gridMesActual)
-        generarMes(calendarioMes = mesAnterior, grid = gridMesAnterior)
+
+        txtTituloMesActual.text =
+            tituloActual
+
+
+        txtTituloMesAnterior.text =
+            tituloAnterior
+
+
+        // ======================================================
+        // GENERAR LOS DOS MESES
+        // ======================================================
+
+        generarMes(
+            calendarioMes = mesActual,
+            grid = gridMesActual
+        )
+
+
+        generarMes(
+            calendarioMes = mesAnterior,
+            grid = gridMesAnterior
+        )
     }
 
-    // OBTENER TÍTULO DEL MES
-    private fun obtenerTituloMes(calendario: Calendar): String {
+
+    // ==========================================================
+    // TÍTULO MES
+    // ==========================================================
+
+    private fun obtenerTituloMes(
+        calendario: Calendar
+    ): String {
+
+
         val formato =
             SimpleDateFormat(
                 "MMMM yyyy",
@@ -132,6 +735,7 @@ class CalendarioFragment : Fragment() {
                 )
             )
 
+
         return capitalizarMes(
             formato.format(
                 calendario.time
@@ -139,61 +743,162 @@ class CalendarioFragment : Fragment() {
         )
     }
 
+
+    // ==========================================================
     // GENERAR MES
-    private fun generarMes(calendarioMes: Calendar, grid: GridLayout) {
+    // ==========================================================
+
+    private fun generarMes(
+        calendarioMes: Calendar,
+        grid: GridLayout
+    ) {
+
 
         grid.removeAllViews()
-        grid.columnCount = 7
 
+
+        grid.columnCount =
+            7
+
+
+        // ======================================================
         // PRIMER DÍA DEL MES
-        val primerDiaMes = calendarioMes.clone() as Calendar
-        primerDiaMes.set( Calendar.DAY_OF_MONTH, 1)
+        // ======================================================
 
-        // DÍA DE LA SEMANA
-        val diaSemana = primerDiaMes.get(Calendar.DAY_OF_WEEK)
+        val primerDiaMes =
+            calendarioMes.clone() as Calendar
 
-        /* NUESTRO CALENDARIO COMIENZA EN LUNES */
+
+        primerDiaMes.set(
+            Calendar.DAY_OF_MONTH,
+            1
+        )
+
+
+        val diaSemana =
+            primerDiaMes.get(
+                Calendar.DAY_OF_WEEK
+            )
+
+
+        // ======================================================
+        // CALENDARIO COMIENZA LUNES
+        // ======================================================
+
         val espaciosIniciales =
             when (diaSemana) {
+
+
                 Calendar.SUNDAY ->
                     6
+
+
                 else ->
                     diaSemana -
                             Calendar.MONDAY
             }
 
-        // ESPACIOS ANTES DEL DÍA 1
-        for (i in 0 until espaciosIniciales) {
-            val espacio =View(requireContext())
-            espacio.layoutParams = crearParametrosCelda()
+
+        // ======================================================
+        // ESPACIOS VACÍOS
+        // ======================================================
+
+        for (
+        i in 0 until espaciosIniciales
+        ) {
+
+
+            val espacio =
+                View(
+                    requireContext()
+                )
+
+
+            espacio.layoutParams =
+                crearParametrosCelda()
+
+
             grid.addView(
                 espacio
             )
         }
 
-        // CANTIDAD DE DÍAS
-        val cantidadDias = calendarioMes.getActualMaximum(Calendar.DAY_OF_MONTH)
 
-        // GENERAR DÍAS
-        for (diaNumero in 1..cantidadDias) {
-            val fecha = calendarioMes.clone() as Calendar
+        // ======================================================
+        // DÍAS DEL MES
+        // ======================================================
 
-            fecha.set( Calendar.DAY_OF_MONTH,diaNumero )
-            limpiarHora(fecha)
+        val cantidadDias =
+            calendarioMes.getActualMaximum(
+                Calendar.DAY_OF_MONTH
+            )
 
-            // CONTENEDOR COMPLETO DEL DÍA
-            val contenedorDia = LinearLayout( requireContext()
+
+        for (
+        diaNumero in 1..cantidadDias
+        ) {
+
+
+            val fecha =
+                calendarioMes.clone() as Calendar
+
+
+            fecha.set(
+                Calendar.DAY_OF_MONTH,
+                diaNumero
+            )
+
+
+            limpiarHora(
+                fecha
+            )
+
+
+            // ==================================================
+            // CONTENEDOR DEL DÍA
+            // ==================================================
+
+            val contenedorDia =
+                LinearLayout(
+                    requireContext()
                 ).apply {
-                    orientation =LinearLayout.VERTICAL
-                    gravity =Gravity.CENTER
-                    layoutParams =crearParametrosCelda()
+
+
+                    orientation =
+                        LinearLayout.VERTICAL
+
+
+                    gravity =
+                        Gravity.CENTER
+
+
+                    layoutParams =
+                        crearParametrosCelda()
                 }
 
+
+            // ==================================================
             // NÚMERO DEL DÍA
-            val dia =TextView(  requireContext()).apply {
-                    text =diaNumero.toString()
-                    gravity = Gravity.CENTER
-                    textSize =  13f
+            // ==================================================
+
+            val dia =
+                TextView(
+                    requireContext()
+                ).apply {
+
+
+                    text =
+                        diaNumero.toString()
+
+
+                    gravity =
+                        Gravity.CENTER
+
+
+                    textSize =
+                        13f
+
+
                     layoutParams =
                         LinearLayout.LayoutParams(
                             LinearLayout.LayoutParams.MATCH_PARENT,
@@ -201,164 +906,414 @@ class CalendarioFragment : Fragment() {
                         )
                 }
 
-            // CONFIGURAR ESTADO VISUAL
+
+            // ==================================================
+            // ESTADO DEL NÚMERO
+            // ==================================================
+
             configurarEstadoDia(
-                dia = dia,
-                fecha = fecha,
-                calendarioMes = calendarioMes
+                dia,
+                fecha
             )
 
-            // CREAR RAYITA
-            val indicador =  crearIndicadorFecha(fecha)
 
-            // AGREGAR AL CONTENEDOR
-            contenedorDia.addView( dia )
-            contenedorDia.addView( indicador )
+            // ==================================================
+            // RAYITA DE COLOR
+            // ==================================================
 
-            // C LICK  SOLO LAS FECHAS PASADAS SE PUEDEN PRESIONAR
-            if ( esFechaPasada( fecha ) ) {
-                contenedorDia.isEnabled = true
-                contenedorDia.isClickable =  true
+            val indicador =
+                crearIndicadorFecha(
+                    fecha
+                )
+
+
+            contenedorDia.addView(
+                dia
+            )
+
+
+            contenedorDia.addView(
+                indicador
+            )
+
+
+            // ==================================================
+            // VERIFICAR SI HAY REGISTRO
+            // ==================================================
+
+            val fechaClave =
+                obtenerFechaClave(
+                    fecha
+                )
+
+
+            val tieneRegistro =
+                resumenPorFecha.containsKey(
+                    fechaClave
+                )
+
+
+            // ==================================================
+            // CLICK
+            //
+            // PERMITIR:
+            // - FECHAS PASADAS CON REGISTRO
+            // - HOY CON REGISTRO
+            // ==================================================
+
+            if (
+                !esFechaFutura(fecha) &&
+                tieneRegistro
+            ) {
+
+                contenedorDia.isEnabled =
+                    true
+
+                contenedorDia.isClickable =
+                    true
+
                 contenedorDia.setOnClickListener {
-                    fechaSeleccionada = fecha.clone() as Calendar
+
+                    fechaSeleccionada =
+                        fecha.clone() as Calendar
+
                     actualizarCalendario()
+
                     mostrarDetalleMarcacion(
                         fecha
                     )
                 }
+
             } else {
-                /* HOY Y FUTURO
-                 * BLOQUEADOS*/
-                contenedorDia.isEnabled =  false
-                contenedorDia.isClickable = false
+
+                contenedorDia.isEnabled =
+                    false
+
+                contenedorDia.isClickable =
+                    false
             }
 
-            // AGREGAR AL GRID
             grid.addView(
                 contenedorDia
             )
         }
     }
 
-    // CREAR INDICADOR DE COLOR
-    private fun crearIndicadorFecha( fecha: Calendar ): View {
 
-        val indicador =  View( requireContext() )
+    // ==========================================================
+    // CREAR RAYITA SEGÚN codigoasistencia
+    // ==========================================================
 
-        // TAMAÑO DE LA RAYITA
-        val parametros =
-            LinearLayout.LayoutParams(
-                dp(14),
-                dp(3)
+    private fun crearIndicadorFecha(
+        fecha: Calendar
+    ): View {
+
+
+        val indicador =
+            View(
+                requireContext()
             )
 
-        parametros.topMargin = dp(1)
-        indicador.layoutParams = parametros
 
-        // HOY Y FUTURO
-        // SIN COLOR
+        val parametros =
+            LinearLayout.LayoutParams(
+                dp(20),
+                dp(4)
+            )
 
-        if ( !esFechaPasada(fecha) ) {
-            indicador.background = null
+
+        parametros.topMargin =
+            dp(1)
+
+
+        indicador.layoutParams =
+            parametros
+
+
+        // ======================================================
+        // FECHA DEL CALENDARIO
+        // ======================================================
+
+        val fechaTexto =
+            obtenerFechaClave(
+                fecha
+            )
+
+
+        // ======================================================
+        // BUSCAR EN DATOS API
+        // ======================================================
+
+        val registro =
+            resumenPorFecha[
+                fechaTexto
+            ]
+
+
+        Log.d(
+            "CALENDARIO_COLOR",
+            "BUSCANDO=$fechaTexto EXISTE=${registro != null}"
+        )
+
+
+        // ======================================================
+        // SIN RESULTADO = SIN COLOR
+        // ======================================================
+
+        if (registro == null) {
+
+
+            indicador.background =
+                null
+
+
             return indicador
         }
 
-        // COLOR ALEATORIO ESTABLE
-        // 0 = VERDE
-        // 1 = ROJO
-        // 2 = AMARILLO
-        // 3 = SIN COLOR
 
-        val semilla =
-            fecha.get(
-                Calendar.YEAR
-            ) * 10000 +
-                    (
-                            fecha.get(
-                                Calendar.MONTH
-                            ) + 1
-                            ) * 100 +
-                    fecha.get(
-                        Calendar.DAY_OF_MONTH
-                    )
+        // ======================================================
+        // CÓDIGO
+        // ======================================================
 
-        val tipo = kotlin.math.abs( semilla.hashCode() ) % 4
+        val codigo =
+            registro
+                .codigoasistencia
+                ?.trim()
+                ?.uppercase(
+                    Locale.getDefault()
+                )
+                ?: ""
 
-        // SIN INDICADOR
-        if (tipo == 3) {
-            indicador.background =  null
-            return indicador
-        }
 
-        // COLOR
+        // ======================================================
+        // COLORES
+        //
+        // A  = VERDE
+        // D  = AZUL
+        // F  = ROJO
+        // FT = ROJO
+        // V  = AMARILLO
+        // OTRO = ANARANJADO
+        // ======================================================
+
         val color =
-            when (tipo) {
+            obtenerColorCodigo(
+                codigo
+            )
 
-                // VERDE
-                0 ->
-                    Color.parseColor(
-                        "#28A745"
-                    )
 
-                // ROJO
-                1 ->
-                    Color.parseColor(
-                        "#D71920"
-                    )
+        Log.d(
+            "CALENDARIO_COLOR",
+            "FECHA=$fechaTexto CODIGO=$codigo"
+        )
 
-                // AMARILLO
-                else ->
-                    Color.parseColor(
-                        "#F4C430"
-                    )
-            }
 
-        // FONDO CON BORDES REDONDEADOS
+        // ======================================================
+        // FONDO
+        // ======================================================
+
         val fondo =
             GradientDrawable().apply {
-                shape =  GradientDrawable.RECTANGLE
-                cornerRadius =  dp(2).toFloat()
+
+
+                shape =
+                    GradientDrawable.RECTANGLE
+
+
+                cornerRadius =
+                    dp(3).toFloat()
+
+
                 setColor(
                     color
                 )
             }
-        indicador.background =   fondo
+
+
+        indicador.background =
+            fondo
+
+
         return indicador
     }
 
-    // ESTADO VISUAL DEL DÍA
-    private fun configurarEstadoDia( dia: TextView,fecha: Calendar,  calendarioMes: Calendar) {
 
-        // HOY CÍRCULO ROJO SIN RAYITA BLOQUEADO
-        if ( esHoy( fecha))
-        {
-            dia.setBackgroundResource( R.drawable.bg_dia_seleccionado )
-            dia.setTextColor( Color.WHITE)
-            return
-        }
+    // ==========================================================
+    // COLOR SEGÚN CÓDIGO
+    // ==========================================================
 
-        // FECHA PASADA SELECCIONADA
-        if ( mismaFecha(fecha, fechaSeleccionada )
+    private fun obtenerColorCodigo(
+        codigo: String
+    ): Int {
+
+
+        return when (
+            codigo.trim()
+                .uppercase(
+                    Locale.getDefault()
+                )
         ) {
-            dia.setBackgroundResource( R.drawable.bg_dia_seleccionado )
-            dia.setTextColor( Color.WHITE)
+
+
+            // ASISTENCIA
+            "A" ->
+                Color.parseColor(
+                    "#22C55E"
+                )
+
+
+            // DESCANSO
+            "D" ->
+                Color.parseColor(
+                    "#64748B"
+                )
+
+            // FALTA
+            "F" ->
+                Color.parseColor(
+                    "#EF4444"
+                )
+
+            // FERIADO
+             "FT" ->
+                Color.parseColor(
+                    "#F59E0B"
+                )
+
+
+            // VACACIONES
+            "V" ->
+                Color.parseColor(
+                    "#EAB308"
+                )
+
+
+            // OTRO
+            else ->
+                Color.parseColor(
+                    "#94A3B8"
+                )
+        }
+    }
+
+
+    // ==========================================================
+    // FECHA CALENDARIO yyyy-MM-dd
+    // ==========================================================
+
+    private fun obtenerFechaClave(
+        fecha: Calendar
+    ): String {
+
+
+        val formato =
+            SimpleDateFormat(
+                "yyyy-MM-dd",
+                Locale.US
+            )
+
+
+        return formato.format(
+            fecha.time
+        )
+    }
+
+
+    // ==========================================================
+    // ESTADO VISUAL DEL DÍA
+    // ==========================================================
+
+    private fun configurarEstadoDia(
+        dia: TextView,
+        fecha: Calendar
+    ) {
+
+
+        // ======================================================
+        // HOY
+        // ======================================================
+
+        if (
+            esHoy(
+                fecha
+            )
+        ) {
+
+
+            dia.setBackgroundResource(
+                R.drawable.bg_dia_seleccionado
+            )
+
+
+            dia.setTextColor(
+                Color.WHITE
+            )
+
+
             return
         }
 
-        // SIN FONDO
-        dia.background = null
 
-        // FUTURO GRIS Y BLOQUEADO
-        if ( esFechaFutura( fecha )) {
+        // ======================================================
+        // FECHA SELECCIONADA
+        // ======================================================
+
+        if (
+            mismaFecha(
+                fecha,
+                fechaSeleccionada
+            )
+        ) {
+
+
+            dia.setBackgroundResource(
+                R.drawable.bg_dia_seleccionado
+            )
+
+
+            dia.setTextColor(
+                Color.WHITE
+            )
+
+
+            return
+        }
+
+
+        // ======================================================
+        // SIN FONDO
+        // ======================================================
+
+        dia.background =
+            null
+
+
+        // ======================================================
+        // FUTURO
+        // ======================================================
+
+        if (
+            esFechaFutura(
+                fecha
+            )
+        ) {
+
+
             dia.setTextColor(
                 Color.parseColor(
                     "#DADDE1"
                 )
             )
+
+
             return
         }
 
-        // PASADO TEXTO NORMAL
+
+        // ======================================================
+        // PASADO
+        // ======================================================
+
         dia.setTextColor(
             Color.parseColor(
                 "#333333"
@@ -366,18 +1321,33 @@ class CalendarioFragment : Fragment() {
         )
     }
 
-    // PARÁMETROS DE CADA CELDA
-    private fun crearParametrosCelda(): GridLayout.LayoutParams {
-        val parametros = GridLayout.LayoutParams()
 
-        /* CADA DÍA OCUPA 1/7 DEL ANCHO */
-        parametros.width =    0
-        parametros.height = dp(42)
+    // ==========================================================
+    // PARÁMETROS CELDA
+    // ==========================================================
+
+    private fun crearParametrosCelda():
+            GridLayout.LayoutParams {
+
+
+        val parametros =
+            GridLayout.LayoutParams()
+
+
+        parametros.width =
+            0
+
+
+        parametros.height =
+            dp(44)
+
+
         parametros.columnSpec =
             GridLayout.spec(
                 GridLayout.UNDEFINED,
                 1f
             )
+
 
         parametros.setMargins(
             0,
@@ -386,163 +1356,435 @@ class CalendarioFragment : Fragment() {
             0
         )
 
+
         return parametros
     }
 
-    // VERIFICAR FECHA PASADA
-    private fun esFechaPasada( fecha: Calendar): Boolean {
 
-        val hoy =  Calendar.getInstance()
-        limpiarHora(  hoy)
-        val comparar =  fecha.clone() as Calendar
-        limpiarHora( comparar )
+    // ==========================================================
+    // ES FECHA PASADA
+    // ==========================================================
 
-        return comparar.before( hoy)
+    private fun esFechaPasada(
+        fecha: Calendar
+    ): Boolean {
+
+
+        val hoy =
+            Calendar.getInstance()
+
+
+        limpiarHora(
+            hoy
+        )
+
+
+        val comparar =
+            fecha.clone() as Calendar
+
+
+        limpiarHora(
+            comparar
+        )
+
+
+        return comparar.before(
+            hoy
+        )
     }
 
-    // VERIFICAR FECHA FUTURA
-    private fun esFechaFutura(fecha: Calendar ): Boolean {
-        val hoy = Calendar.getInstance()
-        limpiarHora(hoy )
-        val comparar = fecha.clone() as Calendar
-        limpiarHora(comparar )
+
+    // ==========================================================
+    // ES FUTURA
+    // ==========================================================
+
+    private fun esFechaFutura(
+        fecha: Calendar
+    ): Boolean {
+
+
+        val hoy =
+            Calendar.getInstance()
+
+
+        limpiarHora(
+            hoy
+        )
+
+
+        val comparar =
+            fecha.clone() as Calendar
+
+
+        limpiarHora(
+            comparar
+        )
+
+
         return comparar.after(
             hoy
         )
     }
 
-    // VERIFICAR SI ES HOY
-    private fun esHoy( fecha: Calendar ): Boolean {
-        val hoy = Calendar.getInstance()
-        limpiarHora(hoy)
-        val comparar =fecha.clone() as Calendar
-        limpiarHora( comparar )
+
+    // ==========================================================
+    // ES HOY
+    // ==========================================================
+
+    private fun esHoy(
+        fecha: Calendar
+    ): Boolean {
+
+
+        val hoy =
+            Calendar.getInstance()
+
+
+        limpiarHora(
+            hoy
+        )
+
+
+        val comparar =
+            fecha.clone() as Calendar
+
+
+        limpiarHora(
+            comparar
+        )
+
+
         return mismaFecha(
             comparar,
             hoy
         )
     }
 
-    // QUITAR HORA
-    private fun limpiarHora( fecha: Calendar ) {
-        fecha.set(  Calendar.HOUR_OF_DAY, 0)
-        fecha.set( Calendar.MINUTE, 0)
-        fecha.set( Calendar.SECOND, 0)
-        fecha.set(Calendar.MILLISECOND, 0)
+
+    // ==========================================================
+    // LIMPIAR HORA
+    // ==========================================================
+
+    private fun limpiarHora(
+        fecha: Calendar
+    ) {
+
+
+        fecha.set(
+            Calendar.HOUR_OF_DAY,
+            0
+        )
+
+
+        fecha.set(
+            Calendar.MINUTE,
+            0
+        )
+
+
+        fecha.set(
+            Calendar.SECOND,
+            0
+        )
+
+
+        fecha.set(
+            Calendar.MILLISECOND,
+            0
+        )
     }
 
-    // COMPARAR DOS FECHAS
-    private fun mismaFecha( fecha1: Calendar,fecha2: Calendar): Boolean {
+
+    // ==========================================================
+    // MISMA FECHA
+    // ==========================================================
+
+    private fun mismaFecha(
+        fecha1: Calendar,
+        fecha2: Calendar
+    ): Boolean {
+
+
         return (
-                fecha1.get(Calendar.YEAR) == fecha2.get(Calendar.YEAR )&&
-                        fecha1.get( Calendar.MONTH ) == fecha2.get(Calendar.MONTH) &&
-                        fecha1.get(Calendar.DAY_OF_MONTH) == fecha2.get( Calendar.DAY_OF_MONTH)
+                fecha1.get(
+                    Calendar.YEAR
+                ) ==
+                        fecha2.get(
+                            Calendar.YEAR
+                        )
+                        &&
+                        fecha1.get(
+                            Calendar.MONTH
+                        ) ==
+                        fecha2.get(
+                            Calendar.MONTH
+                        )
+                        &&
+                        fecha1.get(
+                            Calendar.DAY_OF_MONTH
+                        ) ==
+                        fecha2.get(
+                            Calendar.DAY_OF_MONTH
+                        )
                 )
     }
 
+
+    // ==========================================================
     // CAPITALIZAR MES
-    private fun capitalizarMes(texto: String ): String {
+    // ==========================================================
+
+    private fun capitalizarMes(
+        texto: String
+    ): String {
+
+
         return texto.replaceFirstChar {
-            if (it.isLowerCase() ) {
+
+
+            if (
+                it.isLowerCase()
+            ) {
+
+
                 it.titlecase(
                     Locale(
                         "es",
                         "ES"
                     )
                 )
+
+
             } else {
+
+
                 it.toString()
             }
         }
     }
 
 
-    // DP A PX
-    private fun dp( valor: Int ): Int {
-        return ( valor * resources.displayMetrics.density ).toInt()
+    // ==========================================================
+    // DP
+    // ==========================================================
+
+    private fun dp(
+        valor: Int
+    ): Int {
+
+
+        return (
+                valor *
+                        resources
+                            .displayMetrics
+                            .density
+                ).toInt()
     }
 
-    private fun mostrarDetalleMarcacion( fecha: Calendar ) {
 
-        val dialog = Dialog(requireContext())
-        val vista =  layoutInflater.inflate( R.layout.dialog_detalle_marcacion,null )
+    // ==========================================================
+    // MOSTRAR DETALLE DEL REGISTRO
+    // ==========================================================
 
-        dialog.setContentView(vista)
-        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+    private fun mostrarDetalleMarcacion(
+        fecha: Calendar
+    ) {
 
-        val txtFecha = vista.findViewById<TextView>( R.id.txtFechaDialog )
-        val txtCliente =vista.findViewById<TextView>(R.id.txtClienteDialog )
-        val txtSede =vista.findViewById<TextView>( R.id.txtSedeDialog )
-        val txtHora = vista.findViewById<TextView>( R.id.txtHoraDialog)
-        val txtTipo = vista.findViewById<TextView>( R.id.txtTipoDialog )
-        val btnCerrar =vista.findViewById<TextView>(R.id.btnCerrarDialog )
-        val btnAceptar =  vista.findViewById<TextView>( R.id.btnAceptarDialog)
 
-        val formato =
-            SimpleDateFormat(
-                "d 'de' MMMM 'de' yyyy",
-                Locale("es", "ES")
+        val fechaClave =
+            obtenerFechaClave(
+                fecha
             )
 
-        txtFecha.text = formato.format(fecha.time)
-        txtCliente.text = "Cliente: Grupo Gurkas"
-        txtSede.text = "Sede: Sede Central"
-        txtHora.text ="Hora de marcación: 08:05"
 
-        val tipo = obtenerTipoMarcacion(fecha)
+        val registro =
+            resumenPorFecha[
+                fechaClave
+            ]
 
-        txtTipo.text = "Tipo de marcación: ${tipo.first}"
-        txtTipo.setTextColor( tipo.second )
 
-        btnCerrar.setOnClickListener { dialog.dismiss()  }
-        btnAceptar.setOnClickListener {  dialog.dismiss() }
+        if (registro == null) {
+
+
+            Toast.makeText(
+                requireContext(),
+                "No hay marcación para esta fecha",
+                Toast.LENGTH_SHORT
+            ).show()
+
+
+            return
+        }
+
+
+        // ======================================================
+        // DIÁLOGO
+        // ======================================================
+
+        val dialog =
+            Dialog(
+                requireContext()
+            )
+
+
+        val vista =
+            layoutInflater.inflate(
+                R.layout.dialog_detalle_marcacion,
+                null
+            )
+
+
+        dialog.setContentView(
+            vista
+        )
+
+
+        dialog.window
+            ?.setBackgroundDrawable(
+                ColorDrawable(
+                    Color.TRANSPARENT
+                )
+            )
+
+
+        // ======================================================
+        // VISTAS
+        // ======================================================
+
+        val txtFecha =
+            vista.findViewById<TextView>(
+                R.id.txtFechaDialog
+            )
+
+
+        val txtCliente =
+            vista.findViewById<TextView>(
+                R.id.txtClienteDialog
+            )
+
+
+        val txtSede =
+            vista.findViewById<TextView>(
+                R.id.txtSedeDialog
+            )
+
+
+        val txtHora =
+            vista.findViewById<TextView>(
+                R.id.txtHoraDialog
+            )
+
+
+        val txtTipo =
+            vista.findViewById<TextView>(
+                R.id.txtTipoDialog
+            )
+
+
+        val btnCerrar =
+            vista.findViewById<TextView>(
+                R.id.btnCerrarDialog
+            )
+
+
+        val btnAceptar =
+            vista.findViewById<TextView>(
+                R.id.btnAceptarDialog
+            )
+
+
+        // ======================================================
+        // FECHA
+        // ======================================================
+
+        val formatoPantalla =
+            SimpleDateFormat(
+                "d 'de' MMMM 'de' yyyy",
+                Locale(
+                    "es",
+                    "ES"
+                )
+            )
+
+
+        txtFecha.text =
+            formatoPantalla.format(
+                fecha.time
+            )
+
+
+        // ======================================================
+        // DATOS API
+        // ======================================================
+
+        txtCliente.text =
+            "Cliente: ${registro.cliente ?: "--"}"
+
+
+        txtSede.text =
+            "Sede: ${registro.sede ?: "--"}"
+
+
+        txtHora.text =
+            "Hora de marcación: ${registro.hora ?: "--"}"
+
+
+        txtTipo.text =
+            "Tipo de marcación: ${registro.tipoAsistencia ?: "--"}"
+
+
+        // ======================================================
+        // COLOR DEL TIPO
+        // ======================================================
+
+        val codigo =
+            registro
+                .codigoasistencia
+                ?.trim()
+                ?.uppercase(
+                    Locale.getDefault()
+                )
+                ?: ""
+
+
+        txtTipo.setTextColor(
+            obtenerColorCodigo(
+                codigo
+            )
+        )
+
+
+        // ======================================================
+        // BOTONES
+        // ======================================================
+
+        btnCerrar.setOnClickListener {
+
+            dialog.dismiss()
+        }
+
+
+        btnAceptar.setOnClickListener {
+
+            dialog.dismiss()
+        }
+
+
+        // ======================================================
+        // MOSTRAR
+        // ======================================================
 
         dialog.show()
+
+
         dialog.window?.setLayout(
-            (resources.displayMetrics.widthPixels * 0.88).toInt(),
+            (
+                    resources
+                        .displayMetrics
+                        .widthPixels *
+                            0.88
+                    ).toInt(),
             ViewGroup.LayoutParams.WRAP_CONTENT
         )
-    }
-
-    private fun obtenerTipoMarcacion(
-        fecha: Calendar
-    ): Pair<String, Int> {
-
-        val semilla =
-            fecha.get(Calendar.YEAR) * 10000 +
-                    (fecha.get(Calendar.MONTH) + 1) * 100 +
-                    fecha.get(Calendar.DAY_OF_MONTH)
-
-        val tipo =
-            kotlin.math.abs(
-                semilla.hashCode()
-            ) % 4
-
-        return when (tipo) {
-
-            0 ->
-                Pair(
-                    "Asistencia",
-                    Color.parseColor("#28A745")
-                )
-
-            1 ->
-                Pair(
-                    "Falta",
-                    Color.parseColor("#D71920")
-                )
-
-            2 ->
-                Pair(
-                    "Tardanza",
-                    Color.parseColor("#F4C430")
-                )
-
-            else ->
-                Pair(
-                    "Sin registro",
-                    Color.parseColor("#8A9299")
-                )
-        }
     }
 }

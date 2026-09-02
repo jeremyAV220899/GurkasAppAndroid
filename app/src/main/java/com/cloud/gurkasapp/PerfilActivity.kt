@@ -12,6 +12,7 @@ import android.os.Bundle
 import android.provider.Settings
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.Log
 import android.view.View
 import android.widget.EditText
 import android.widget.ImageView
@@ -23,8 +24,20 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import com.bumptech.glide.Glide
+import com.cloud.gurkasapp.api.RetrofitClient
+import com.cloud.gurkasapp.models.DatosResponse
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+
 
 class PerfilActivity : AppCompatActivity() {
+
+
+    // ==========================================================
+    // PERMISO CÁMARA
+    // ==========================================================
 
     private val permisoCamaraLauncher =
         registerForActivityResult(
@@ -52,6 +65,10 @@ class PerfilActivity : AppCompatActivity() {
         }
 
 
+    // ==========================================================
+    // PERMISO NOTIFICACIONES
+    // ==========================================================
+
     private val permisoNotificacionesLauncher =
         registerForActivityResult(
             androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
@@ -78,6 +95,10 @@ class PerfilActivity : AppCompatActivity() {
         }
 
 
+    // ==========================================================
+    // PERMISO UBICACIÓN
+    // ==========================================================
+
     private val permisoUbicacionLauncher =
         registerForActivityResult(
             androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
@@ -103,18 +124,33 @@ class PerfilActivity : AppCompatActivity() {
             actualizarEstadoGps()
         }
 
+
+    // ==========================================================
+    // ON CREATE
+    // ==========================================================
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         enableEdgeToEdge()
-        setContentView(R.layout.activity_perfil)
+
+        setContentView(
+            R.layout.activity_perfil
+        )
+
+
+        // ======================================================
+        // INSETS
+        // ======================================================
 
         ViewCompat.setOnApplyWindowInsetsListener(
             findViewById(R.id.main)
         ) { v, insets ->
 
             val systemBars =
-                insets.getInsets(WindowInsetsCompat.Type.systemBars())
+                insets.getInsets(
+                    WindowInsetsCompat.Type.systemBars()
+                )
 
             v.setPadding(
                 systemBars.left,
@@ -126,52 +162,112 @@ class PerfilActivity : AppCompatActivity() {
             insets
         }
 
-        // =============================
-        // CERRAR PERFIL
-        // =============================
 
-        findViewById<View>(R.id.btnCerrar).setOnClickListener {
+        // ======================================================
+        // RECIBIR CÓDIGO DESDE MAIN ACTIVITY
+        // ======================================================
+
+        val codigoUsuario =
+            intent
+                .getStringExtra(
+                    "codigo_usuario"
+                )
+                ?.trim()
+                ?: ""
+
+
+        Log.d(
+            "DATOS_PERSONAL",
+            "Código recibido: $codigoUsuario"
+        )
+
+
+        // ======================================================
+        // CERRAR PERFIL
+        // ======================================================
+
+        findViewById<View>(
+            R.id.btnCerrar
+        ).setOnClickListener {
+
             finish()
         }
 
-        // =============================
+
+        // ======================================================
         // FOTO DE PERFIL
-        // =============================
+        // ======================================================
 
         val imgPerfil =
-            findViewById<ImageView>(R.id.imgPerfil)
+            findViewById<ImageView>(
+                R.id.imgPerfil
+            )
 
         imgPerfil.setOnClickListener {
 
-            val intent = Intent(
-                this,
-                activity_registro_foto::class.java
-            )
+            val intent =
+                Intent(
+                    this,
+                    activity_registro_foto::class.java
+                )
 
-            startActivity(intent)
+            startActivity(
+                intent
+            )
         }
 
-        // =============================
+
+        // ======================================================
+        // CONSULTAR DATOS PERSONALES
+        // ======================================================
+
+        if (codigoUsuario.isNotBlank()) {
+
+            obtenerDatosPersonal(
+                codigoUsuario
+            )
+
+        } else {
+
+            Toast.makeText(
+                this,
+                "No se recibió el código del usuario",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+
+
+        // ======================================================
         // ESTADOS DEL DISPOSITIVO
-        // =============================
+        // ======================================================
 
         configurarClicksEstados()
+
         actualizarEstados()
 
-        // =============================
+
+        // ======================================================
         // SUGERENCIA
-        // =============================
+        // ======================================================
 
         val edtSugerencia =
-            findViewById<EditText>(R.id.edtSugerencia)
+            findViewById<EditText>(
+                R.id.edtSugerencia
+            )
 
         val txtContador =
-            findViewById<TextView>(R.id.txtContadorSugerencia)
+            findViewById<TextView>(
+                R.id.txtContadorSugerencia
+            )
 
         val btnEnviar =
-            findViewById<TextView>(R.id.btnEnviarSugerencia)
+            findViewById<TextView>(
+                R.id.btnEnviarSugerencia
+            )
+
 
         edtSugerencia.addTextChangedListener(
+
             object : TextWatcher {
 
                 override fun beforeTextChanged(
@@ -190,7 +286,8 @@ class PerfilActivity : AppCompatActivity() {
                 ) {
 
                     val cantidad =
-                        s?.length ?: 0
+                        s?.length
+                            ?: 0
 
                     txtContador.text =
                         "$cantidad / 100"
@@ -203,16 +300,19 @@ class PerfilActivity : AppCompatActivity() {
             }
         )
 
-        // =============================
-        // VALIDAR Y ENVIAR
-        // =============================
+
+        // ======================================================
+        // VALIDAR Y ENVIAR SUGERENCIA
+        // ======================================================
 
         btnEnviar.setOnClickListener {
 
             val sugerencia =
-                edtSugerencia.text
+                edtSugerencia
+                    .text
                     .toString()
                     .trim()
+
 
             when {
 
@@ -224,6 +324,7 @@ class PerfilActivity : AppCompatActivity() {
                     edtSugerencia.requestFocus()
                 }
 
+
                 sugerencia.length < 10 -> {
 
                     edtSugerencia.error =
@@ -231,6 +332,7 @@ class PerfilActivity : AppCompatActivity() {
 
                     edtSugerencia.requestFocus()
                 }
+
 
                 else -> {
 
@@ -249,9 +351,405 @@ class PerfilActivity : AppCompatActivity() {
         }
     }
 
-    // =========================================
-    // REFRESCAR AL REGRESAR A LA PANTALLA
-    // =========================================
+
+    // ==========================================================
+    // CONSULTAR DATOS PERSONALES
+    // ==========================================================
+
+    private fun obtenerDatosPersonal(
+        codigo: String
+    ) {
+
+
+        // ======================================================
+        // VISTAS
+        // ======================================================
+
+        val imgPerfil =
+            findViewById<ImageView>(
+                R.id.imgPerfil
+            )
+
+        val txtNombre =
+            findViewById<TextView>(
+                R.id.txtNombre
+            )
+
+        val txtCarrera =
+            findViewById<TextView>(
+                R.id.txtCarrera
+            )
+
+        val txtCorreoInstitucional =
+            findViewById<TextView>(
+                R.id.txtCorreoInstitucional
+            )
+
+        val txtCodigo =
+            findViewById<TextView>(
+                R.id.txtCodigo
+            )
+
+        val txtDni =
+            findViewById<TextView>(
+                R.id.txtDni
+            )
+
+        val txtModalidad =
+            findViewById<TextView>(
+                R.id.txtModalidad
+            )
+
+        val txtCampus =
+            findViewById<TextView>(
+                R.id.txtCampus
+            )
+
+        val txtTelefono =
+            findViewById<TextView>(
+                R.id.txtTelefono
+            )
+
+        val txtCorreoPersonal =
+            findViewById<TextView>(
+                R.id.txtCorreoPersonal
+            )
+
+        val txtContactoNombre =
+            findViewById<TextView>(
+                R.id.txtContactoNombre
+            )
+
+        val txtContactoTelefono =
+            findViewById<TextView>(
+                R.id.txtContactoTelefono
+            )
+
+        val txtParentesco =
+            findViewById<TextView>(
+                R.id.txtParentesco
+            )
+
+
+        // ======================================================
+        // MOSTRAR CÓDIGO
+        // ======================================================
+
+        txtCodigo.text =
+            codigo
+
+
+        // ======================================================
+        // LOG
+        // ======================================================
+
+        Log.d(
+            "DATOS_PERSONAL",
+            "Consultando API con código: $codigo"
+        )
+
+
+        // ======================================================
+        // LLAMADA API
+        // ======================================================
+
+        RetrofitClient
+            .apiService
+            .obtenerDatosPersonal(
+                codigo
+            )
+            .enqueue(
+
+                object :
+                    Callback<DatosResponse> {
+
+
+                    override fun onResponse(
+                        call: Call<DatosResponse>,
+                        response: Response<DatosResponse>
+                    ) {
+
+
+                        // =========================================
+                        // ERROR HTTP
+                        // =========================================
+
+                        if (!response.isSuccessful) {
+
+                            Log.e(
+                                "DATOS_PERSONAL",
+                                "Error HTTP: ${response.code()}"
+                            )
+
+                            Toast.makeText(
+                                this@PerfilActivity,
+                                "Error al obtener datos: ${response.code()}",
+                                Toast.LENGTH_SHORT
+                            ).show()
+
+                            return
+                        }
+
+
+                        // =========================================
+                        // LISTA
+                        // =========================================
+
+                        val lista =
+                            response
+                                .body()
+                                ?.lista
+                                ?: emptyList()
+
+
+                        if (lista.isEmpty()) {
+
+                            Toast.makeText(
+                                this@PerfilActivity,
+                                "No se encontraron datos del trabajador",
+                                Toast.LENGTH_SHORT
+                            ).show()
+
+                            return
+                        }
+
+
+                        // =========================================
+                        // PRIMER REGISTRO
+                        // =========================================
+
+                        val datos =
+                            lista[0]
+
+
+                        Log.d(
+                            "DATOS_PERSONAL",
+                            "Nombre: ${datos.nombrecompleto}"
+                        )
+
+                        Log.d(
+                            "DATOS_PERSONAL",
+                            "Puesto: ${datos.puesto}"
+                        )
+
+                        Log.d(
+                            "DATOS_PERSONAL",
+                            "Foto: ${datos.foto}"
+                        )
+
+
+                        // =========================================
+                        // NOMBRE
+                        // =========================================
+
+                        txtNombre.text =
+                            datos
+                                .nombrecompleto
+                                ?.takeIf {
+                                    it.isNotBlank()
+                                }
+                                ?: "--"
+
+
+                        // =========================================
+                        // PUESTO CABECERA
+                        // =========================================
+
+                        txtCarrera.text =
+                            datos
+                                .puesto
+                                ?.takeIf {
+                                    it.isNotBlank()
+                                }
+                                ?: "--"
+
+
+                        // =========================================
+                        // CORREO CABECERA
+                        // =========================================
+
+                        txtCorreoInstitucional.text =
+                            datos
+                                .correo
+                                ?.takeIf {
+                                    it.isNotBlank()
+                                }
+                                ?: "--"
+
+
+                        // =========================================
+                        // DNI
+                        // =========================================
+
+                        txtDni.text =
+                            datos
+                                .doctidentidad
+                                ?.takeIf {
+                                    it.isNotBlank()
+                                }
+                                ?: "--"
+
+
+                        // =========================================
+                        // PUESTO
+                        // =========================================
+
+                        txtModalidad.text =
+                            datos
+                                .puesto
+                                ?.takeIf {
+                                    it.isNotBlank()
+                                }
+                                ?: "--"
+
+
+                        // =========================================
+                        // SEDE
+                        // =========================================
+
+                        txtCampus.text =
+                            datos
+                                .sede
+                                ?.takeIf {
+                                    it.isNotBlank()
+                                }
+                                ?: "--"
+
+
+                        // =========================================
+                        // TELÉFONO
+                        // =========================================
+
+                        txtTelefono.text =
+                            datos
+                                .celular
+                                ?.takeIf {
+                                    it.isNotBlank()
+                                }
+                                ?: "--"
+
+
+                        // =========================================
+                        // CORREO PERSONAL
+                        // =========================================
+
+                        txtCorreoPersonal.text =
+                            datos
+                                .correo
+                                ?.takeIf {
+                                    it.isNotBlank()
+                                }
+                                ?: "--"
+
+
+                        // =========================================
+                        // CONTACTO EMERGENCIA
+                        // =========================================
+
+                        txtContactoNombre.text =
+                            datos
+                                .nombre_contacto
+                                ?.takeIf {
+                                    it.isNotBlank()
+                                }
+                                ?: "--"
+
+
+                        // =========================================
+                        // TELÉFONO CONTACTO
+                        // =========================================
+
+                        txtContactoTelefono.text =
+                            datos
+                                .celular_c_1
+                                ?.takeIf {
+                                    it.isNotBlank()
+                                }
+                                ?: "--"
+
+
+                        // =========================================
+                        // PARENTESCO
+                        //
+                        // LA API NO LO DEVUELVE
+                        // =========================================
+
+                        txtParentesco.text =
+                            "--"
+
+
+                        // =========================================
+                        // FOTO
+                        // =========================================
+
+                        val urlFoto =
+                            datos
+                                .foto
+                                ?.trim()
+
+
+                        if (
+                            !urlFoto.isNullOrBlank()
+                        ) {
+
+                            Log.d(
+                                "DATOS_PERSONAL",
+                                "Cargando foto: $urlFoto"
+                            )
+
+
+                            Glide
+                                .with(
+                                    this@PerfilActivity
+                                )
+                                .load(
+                                    urlFoto
+                                )
+                                .placeholder(
+                                    R.drawable.ic_usuario
+                                )
+                                .error(
+                                    R.drawable.ic_usuario
+                                )
+                                .centerCrop()
+                                .into(
+                                    imgPerfil
+                                )
+
+                        } else {
+
+                            imgPerfil.setImageResource(
+                                R.drawable.ic_usuario
+                            )
+                        }
+                    }
+
+
+                    override fun onFailure(
+                        call: Call<DatosResponse>,
+                        t: Throwable
+                    ) {
+
+                        Log.e(
+                            "DATOS_PERSONAL",
+                            "Error conexión: ${t.message}",
+                            t
+                        )
+
+                        Toast.makeText(
+                            this@PerfilActivity,
+                            "Error de conexión: ${t.message}",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                }
+            )
+    }
+
+
+    // ==========================================================
+    // REFRESCAR AL REGRESAR
+    // ==========================================================
 
     override fun onResume() {
         super.onResume()
@@ -259,9 +757,10 @@ class PerfilActivity : AppCompatActivity() {
         actualizarEstados()
     }
 
-    // =========================================
+
+    // ==========================================================
     // ACTUALIZAR TODOS LOS ESTADOS
-    // =========================================
+    // ==========================================================
 
     private fun actualizarEstados() {
 
@@ -271,9 +770,10 @@ class PerfilActivity : AppCompatActivity() {
         actualizarEstadoNotificaciones()
     }
 
-    // =========================================
+
+    // ==========================================================
     // INTERNET
-    // =========================================
+    // ==========================================================
 
     private fun actualizarEstadoInternet() {
 
@@ -287,17 +787,23 @@ class PerfilActivity : AppCompatActivity() {
                 R.id.iconEstadoInternet
             )
 
+
         val connectivityManager =
             getSystemService(
                 Context.CONNECTIVITY_SERVICE
             ) as ConnectivityManager
 
+
         val network =
             connectivityManager.activeNetwork
 
+
         val capabilities =
             connectivityManager
-                .getNetworkCapabilities(network)
+                .getNetworkCapabilities(
+                    network
+                )
+
 
         val conectado =
             capabilities?.hasCapability(
@@ -306,6 +812,7 @@ class PerfilActivity : AppCompatActivity() {
                     capabilities.hasCapability(
                         NetworkCapabilities.NET_CAPABILITY_VALIDATED
                     )
+
 
         if (conectado) {
 
@@ -325,9 +832,10 @@ class PerfilActivity : AppCompatActivity() {
         }
     }
 
-    // =========================================
-    // GPS / UBICACIÓN
-    // =========================================
+
+    // ==========================================================
+    // GPS
+    // ==========================================================
 
     private fun actualizarEstadoGps() {
 
@@ -341,13 +849,18 @@ class PerfilActivity : AppCompatActivity() {
                 R.id.iconEstadoGps
             )
 
+
         val locationManager =
             getSystemService(
                 Context.LOCATION_SERVICE
             ) as LocationManager
 
+
         val gpsActivo =
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            if (
+                Build.VERSION.SDK_INT >=
+                Build.VERSION_CODES.P
+            ) {
 
                 locationManager.isLocationEnabled
 
@@ -358,11 +871,13 @@ class PerfilActivity : AppCompatActivity() {
                 )
             }
 
+
         val permisoUbicacion =
             ContextCompat.checkSelfPermission(
                 this,
                 Manifest.permission.ACCESS_FINE_LOCATION
             ) == PackageManager.PERMISSION_GRANTED
+
 
         when {
 
@@ -375,6 +890,7 @@ class PerfilActivity : AppCompatActivity() {
                 )
             }
 
+
             !permisoUbicacion -> {
 
                 mostrarAdvertencia(
@@ -383,6 +899,7 @@ class PerfilActivity : AppCompatActivity() {
                     "Sin permiso"
                 )
             }
+
 
             else -> {
 
@@ -395,9 +912,10 @@ class PerfilActivity : AppCompatActivity() {
         }
     }
 
-    // =========================================
+
+    // ==========================================================
     // CÁMARA
-    // =========================================
+    // ==========================================================
 
     private fun actualizarEstadoCamara() {
 
@@ -411,16 +929,19 @@ class PerfilActivity : AppCompatActivity() {
                 R.id.iconEstadoCamara
             )
 
+
         val tieneCamara =
             packageManager.hasSystemFeature(
                 PackageManager.FEATURE_CAMERA_ANY
             )
+
 
         val permiso =
             ContextCompat.checkSelfPermission(
                 this,
                 Manifest.permission.CAMERA
             ) == PackageManager.PERMISSION_GRANTED
+
 
         when {
 
@@ -433,6 +954,7 @@ class PerfilActivity : AppCompatActivity() {
                 )
             }
 
+
             !permiso -> {
 
                 mostrarAdvertencia(
@@ -441,6 +963,7 @@ class PerfilActivity : AppCompatActivity() {
                     "Sin permiso"
                 )
             }
+
 
             else -> {
 
@@ -453,9 +976,10 @@ class PerfilActivity : AppCompatActivity() {
         }
     }
 
-    // =========================================
+
+    // ==========================================================
     // NOTIFICACIONES
-    // =========================================
+    // ==========================================================
 
     private fun actualizarEstadoNotificaciones() {
 
@@ -469,10 +993,12 @@ class PerfilActivity : AppCompatActivity() {
                 R.id.iconEstadoNotificaciones
             )
 
+
         val habilitadas =
             NotificationManagerCompat
                 .from(this)
                 .areNotificationsEnabled()
+
 
         if (habilitadas) {
 
@@ -492,9 +1018,10 @@ class PerfilActivity : AppCompatActivity() {
         }
     }
 
-    // =========================================
-    // COLORES Y ESTADOS
-    // =========================================
+
+    // ==========================================================
+    // MOSTRAR DISPONIBLE
+    // ==========================================================
 
     private fun mostrarDisponible(
         texto: TextView,
@@ -502,20 +1029,29 @@ class PerfilActivity : AppCompatActivity() {
         mensaje: String
     ) {
 
-        texto.text = mensaje
+        texto.text =
+            mensaje
+
         texto.setTextColor(
             android.graphics.Color.parseColor(
                 "#22A447"
             )
         )
 
-        icono.text = "✓"
+        icono.text =
+            "✓"
+
         icono.setTextColor(
             android.graphics.Color.parseColor(
                 "#22A447"
             )
         )
     }
+
+
+    // ==========================================================
+    // MOSTRAR ADVERTENCIA
+    // ==========================================================
 
     private fun mostrarAdvertencia(
         texto: TextView,
@@ -523,20 +1059,29 @@ class PerfilActivity : AppCompatActivity() {
         mensaje: String
     ) {
 
-        texto.text = mensaje
+        texto.text =
+            mensaje
+
         texto.setTextColor(
             android.graphics.Color.parseColor(
                 "#F59E0B"
             )
         )
 
-        icono.text = "!"
+        icono.text =
+            "!"
+
         icono.setTextColor(
             android.graphics.Color.parseColor(
                 "#F59E0B"
             )
         )
     }
+
+
+    // ==========================================================
+    // MOSTRAR ERROR
+    // ==========================================================
 
     private fun mostrarError(
         texto: TextView,
@@ -544,14 +1089,18 @@ class PerfilActivity : AppCompatActivity() {
         mensaje: String
     ) {
 
-        texto.text = mensaje
+        texto.text =
+            mensaje
+
         texto.setTextColor(
             android.graphics.Color.parseColor(
                 "#D71920"
             )
         )
 
-        icono.text = "×"
+        icono.text =
+            "×"
+
         icono.setTextColor(
             android.graphics.Color.parseColor(
                 "#D71920"
@@ -559,28 +1108,37 @@ class PerfilActivity : AppCompatActivity() {
         )
     }
 
-    // =========================================
-    // CLICK EN LOS ESTADOS
-    // =========================================
+
+    // ==========================================================
+    // CONFIGURAR CLICKS DE ESTADOS
+    // ==========================================================
 
     private fun configurarClicksEstados() {
 
         val rowGps =
-            findViewById<View>(R.id.rowEstadoGps)
+            findViewById<View>(
+                R.id.rowEstadoGps
+            )
 
         val rowCamara =
-            findViewById<View>(R.id.rowEstadoCamara)
+            findViewById<View>(
+                R.id.rowEstadoCamara
+            )
 
         val rowNotificaciones =
-            findViewById<View>(R.id.rowEstadoNotificaciones)
+            findViewById<View>(
+                R.id.rowEstadoNotificaciones
+            )
 
         val rowInternet =
-            findViewById<View>(R.id.rowEstadoInternet)
+            findViewById<View>(
+                R.id.rowEstadoInternet
+            )
 
 
-        // =====================================
-        // GPS / UBICACIÓN
-        // =====================================
+        // ======================================================
+        // GPS
+        // ======================================================
 
         rowGps.setOnClickListener {
 
@@ -589,8 +1147,12 @@ class PerfilActivity : AppCompatActivity() {
                     Context.LOCATION_SERVICE
                 ) as LocationManager
 
+
             val gpsActivo =
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                if (
+                    Build.VERSION.SDK_INT >=
+                    Build.VERSION_CODES.P
+                ) {
 
                     locationManager.isLocationEnabled
 
@@ -611,7 +1173,6 @@ class PerfilActivity : AppCompatActivity() {
 
             when {
 
-                // Primero necesitamos permiso
                 !permisoUbicacion -> {
 
                     permisoUbicacionLauncher.launch(
@@ -619,7 +1180,7 @@ class PerfilActivity : AppCompatActivity() {
                     )
                 }
 
-                // Tiene permiso pero GPS apagado
+
                 !gpsActivo -> {
 
                     try {
@@ -629,7 +1190,9 @@ class PerfilActivity : AppCompatActivity() {
                                 Settings.ACTION_LOCATION_SOURCE_SETTINGS
                             )
 
-                        startActivity(intent)
+                        startActivity(
+                            intent
+                        )
 
                     } catch (e: Exception) {
 
@@ -641,7 +1204,7 @@ class PerfilActivity : AppCompatActivity() {
                     }
                 }
 
-                // Todo correcto
+
                 else -> {
 
                     Toast.makeText(
@@ -654,9 +1217,9 @@ class PerfilActivity : AppCompatActivity() {
         }
 
 
-        // =====================================
+        // ======================================================
         // CÁMARA
-        // =====================================
+        // ======================================================
 
         rowCamara.setOnClickListener {
 
@@ -684,9 +1247,9 @@ class PerfilActivity : AppCompatActivity() {
         }
 
 
-        // =====================================
+        // ======================================================
         // NOTIFICACIONES
-        // =====================================
+        // ======================================================
 
         rowNotificaciones.setOnClickListener {
 
@@ -708,7 +1271,6 @@ class PerfilActivity : AppCompatActivity() {
             }
 
 
-            // Android 13+
             if (
                 Build.VERSION.SDK_INT >=
                 Build.VERSION_CODES.TIRAMISU
@@ -719,6 +1281,7 @@ class PerfilActivity : AppCompatActivity() {
                         this,
                         Manifest.permission.POST_NOTIFICATIONS
                     )
+
 
                 if (
                     permiso !=
@@ -736,15 +1299,14 @@ class PerfilActivity : AppCompatActivity() {
 
             } else {
 
-                // Android anteriores a 13
                 abrirConfiguracionNotificaciones()
             }
         }
 
 
-        // =====================================
+        // ======================================================
         // INTERNET
-        // =====================================
+        // ======================================================
 
         rowInternet.setOnClickListener {
 
@@ -753,12 +1315,17 @@ class PerfilActivity : AppCompatActivity() {
                     Context.CONNECTIVITY_SERVICE
                 ) as ConnectivityManager
 
+
             val network =
                 connectivityManager.activeNetwork
 
+
             val capabilities =
                 connectivityManager
-                    .getNetworkCapabilities(network)
+                    .getNetworkCapabilities(
+                        network
+                    )
+
 
             val conectado =
                 capabilities?.hasCapability(
@@ -782,8 +1349,12 @@ class PerfilActivity : AppCompatActivity() {
                 abrirConfiguracionInternet()
             }
         }
-
     }
+
+
+    // ==========================================================
+    // CONFIGURACIÓN NOTIFICACIONES
+    // ==========================================================
 
     private fun abrirConfiguracionNotificaciones() {
 
@@ -800,13 +1371,22 @@ class PerfilActivity : AppCompatActivity() {
                     )
                 }
 
-            startActivity(intent)
+
+            startActivity(
+                intent
+            )
 
         } catch (e: Exception) {
 
             abrirConfiguracionAplicacion()
         }
     }
+
+
+    // ==========================================================
+    // CONFIGURACIÓN INTERNET
+    // ==========================================================
+
     private fun abrirConfiguracionInternet() {
 
         try {
@@ -816,7 +1396,10 @@ class PerfilActivity : AppCompatActivity() {
                     Settings.ACTION_WIFI_SETTINGS
                 )
 
-            startActivity(intent)
+
+            startActivity(
+                intent
+            )
 
         } catch (e: Exception) {
 
@@ -825,9 +1408,18 @@ class PerfilActivity : AppCompatActivity() {
                     Settings.ACTION_SETTINGS
                 )
 
-            startActivity(intent)
+
+            startActivity(
+                intent
+            )
         }
     }
+
+
+    // ==========================================================
+    // CONFIGURACIÓN DE LA APP
+    // ==========================================================
+
     private fun abrirConfiguracionAplicacion() {
 
         val intent =
@@ -841,6 +1433,9 @@ class PerfilActivity : AppCompatActivity() {
                     )
             }
 
-        startActivity(intent)
+
+        startActivity(
+            intent
+        )
     }
 }

@@ -136,9 +136,25 @@ class MainActivity : AppCompatActivity() {
 
         findViewById<View>(R.id.btnPerfil).setOnClickListener {
 
-            val intent = Intent(
-                this,
-                PerfilActivity::class.java
+            val txtUsuario =
+                findViewById<TextView>(
+                    R.id.txtUsuario
+                )
+
+            val codigo =
+                txtUsuario.text
+                    .toString()
+                    .trim()
+
+            val intent =
+                Intent(
+                    this,
+                    PerfilActivity::class.java
+                )
+
+            intent.putExtra(
+                "codigo_usuario",
+                codigo
             )
 
             startActivity(intent)

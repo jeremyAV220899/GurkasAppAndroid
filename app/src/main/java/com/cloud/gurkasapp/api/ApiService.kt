@@ -1,6 +1,8 @@
 package com.cloud.gurkasapp.api
 
-import android.R
+import com.cloud.gurkasapp.models.DatosResponse
+import com.cloud.gurkasapp.models.FeriadoResponse
+import com.cloud.gurkasapp.models.ResumenAsistenciaResponse
 import com.cloud.gurkasapp.models.SedeResponse
 import retrofit2.Call
 import retrofit2.http.GET
@@ -16,6 +18,18 @@ interface ApiService {
 
     @GET("apersonal/FeriadoMovil")
     fun obtenerFeriado(
-        @Query("fecha") fecha: R.string
-    ): Call<SedeResponse>
+        @Query("fecha") fecha: String
+    ): Call<FeriadoResponse>
+
+    @GET("apersonal/DatosPersonalMovil")
+    fun obtenerDatosPersonal(
+        @Query("codigo") codigo: String
+    ): Call<DatosResponse>
+
+    @GET("apersonal/ResumenAsistenciaMovil")
+    fun obtenerResumenAsistencia(
+        @Query("fechainicio") fechainicio: String,
+        @Query("fechafin") fechafin: String,
+        @Query("codigo") codigo: String
+    ): Call<ResumenAsistenciaResponse>
 }
