@@ -26,6 +26,7 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
+import android.graphics.drawable.GradientDrawable
 import com.cloud.gurkasapp.api.RetrofitClient
 import com.cloud.gurkasapp.facerecognition.EmbeddingUtils
 import com.cloud.gurkasapp.facerecognition.FaceComparator
@@ -91,6 +92,11 @@ class ReconocimientoFacialActivity :
     private lateinit var txtEstado:
             TextView
 
+    private lateinit var txtTituloIdentidad: TextView
+
+    private lateinit var txtDescripcion: TextView
+
+    private lateinit var indicadorEstado: View
 
     private lateinit var btnValidar:
             Button
@@ -318,6 +324,20 @@ class ReconocimientoFacialActivity :
                 R.id.txtEstado
             )
 
+        txtTituloIdentidad =
+            findViewById(
+                R.id.txtTituloIdentidad
+            )
+
+        txtDescripcion =
+            findViewById(
+                R.id.txtDescripcion
+            )
+
+        indicadorEstado =
+            findViewById(
+                R.id.indicadorEstado
+            )
 
         btnValidar =
             findViewById(
@@ -451,6 +471,36 @@ class ReconocimientoFacialActivity :
             }
     }
 
+    private fun cambiarColorIndicador(
+        color: Int
+    ) {
+
+        try {
+
+            val drawable =
+                GradientDrawable()
+
+            drawable.shape =
+                GradientDrawable.OVAL
+
+            drawable.setColor(
+                color
+            )
+
+            indicadorEstado.background =
+                drawable
+
+        } catch (
+            e: Exception
+        ) {
+
+            Log.e(
+                "GURKAS_FACIAL",
+                "Error cambiando indicador",
+                e
+            )
+        }
+    }
 
     // =========================================================
     // ESTADO INICIAL
@@ -478,6 +528,10 @@ class ReconocimientoFacialActivity :
             View.VISIBLE
 
 
+        // -----------------------------------------
+        // DATOS
+        // -----------------------------------------
+
         txtDni.text =
             "DNI: --"
 
@@ -485,6 +539,9 @@ class ReconocimientoFacialActivity :
         txtNombre.text =
             "Nombre: --"
 
+        // -----------------------------------------
+        // ESTADO
+        // -----------------------------------------
 
         txtEstado.text =
             "Coloque su rostro dentro del óvalo"
@@ -494,12 +551,46 @@ class ReconocimientoFacialActivity :
             colorEsperando
         )
 
+        cambiarColorIndicador(
+            colorEsperando
+        )
+
+        // -----------------------------------------
+        // TARJETA
+        // -----------------------------------------
+
+        txtTituloIdentidad.text =
+            "Verificación de identidad"
+
+        txtTituloIdentidad.visibility =
+            View.VISIBLE
+
+
+        txtDescripcion.text =
+            "Mantén el rostro de frente y con buena iluminación."
+
+        txtDescripcion.visibility =
+            View.VISIBLE
+
+
+        txtNombre.visibility =
+            View.VISIBLE
+
+        txtDni.visibility =
+            View.VISIBLE
+
+        // -----------------------------------------
+        // ÓVALO
+        // -----------------------------------------
 
         faceOverlay
             .cambiarColorBorde(
                 colorEsperando
             )
 
+        // -----------------------------------------
+        // BOTÓN
+        // -----------------------------------------
 
         btnValidar.isEnabled =
             false
@@ -833,7 +924,6 @@ class ReconocimientoFacialActivity :
         facialCargado =
             false
 
-
         embeddingRegistrado =
             null
 
@@ -843,8 +933,12 @@ class ReconocimientoFacialActivity :
             txtEstado.text =
                 mensaje
 
-
             txtEstado.setTextColor(
+                colorError
+            )
+
+
+            cambiarColorIndicador(
                 colorError
             )
 
@@ -855,11 +949,21 @@ class ReconocimientoFacialActivity :
                 )
 
 
+            txtTituloIdentidad.text =
+                "Error de verificación"
+
+
+            txtDescripcion.text =
+                "No se pudo iniciar correctamente la validación facial."
+
+            txtDescripcion.visibility =
+                View.VISIBLE
+
+
             btnValidar.isEnabled =
                 false
         }
     }
-
 
     // =========================================================
     // INICIAR CÁMARA
@@ -1297,6 +1401,20 @@ class ReconocimientoFacialActivity :
                 txtEstado.setTextColor(
                     colorCorrecto
                 )
+
+                cambiarColorIndicador(
+                    colorCorrecto
+                )
+
+                txtTituloIdentidad.text =
+                    "Verificando identidad"
+
+
+                txtDescripcion.text =
+                    "Mantén el rostro estable durante unos segundos."
+
+                txtDescripcion.visibility =
+                    View.VISIBLE
             }
 
             if (
@@ -1329,24 +1447,49 @@ class ReconocimientoFacialActivity :
 
         runOnUiThread {
 
+
+            // =====================================================
+            // ÓVALO VERDE
+            // =====================================================
+
             faceOverlay
                 .cambiarColorBorde(
                     colorCorrecto
                 )
 
 
-            txtEstado.text =
-                "Rostro reconocido"
+            // =====================================================
+            // ESTADO
+            // =====================================================
 
+            txtEstado.text =
+                "Identidad verificada"
 
             txtEstado.setTextColor(
                 colorCorrecto
             )
 
 
-            // =============================================
+            cambiarColorIndicador(
+                colorCorrecto
+            )
+
+
+            // =====================================================
+            // TARJETA
+            // =====================================================
+
+            txtTituloIdentidad.visibility =
+                View.GONE
+
+
+            txtDescripcion.visibility =
+                View.GONE
+
+
+            // =====================================================
             // DATOS
-            // =============================================
+            // =====================================================
 
             if (
                 datosPersonalCargados
@@ -1354,23 +1497,20 @@ class ReconocimientoFacialActivity :
 
                 mostrarDatosPersonal()
 
-
             } else {
 
                 txtDni.text =
                     "DNI: buscando..."
-
 
                 txtNombre.text =
                     "Nombre: buscando..."
             }
 
 
-            /*
-             * La identidad facial ya fue confirmada.
-             *
-             * Activamos el botón.
-             */
+            // =====================================================
+            // BOTÓN
+            // =====================================================
+
             btnValidar.isEnabled =
                 true
         }
@@ -1402,15 +1542,29 @@ class ReconocimientoFacialActivity :
             txtEstado.text =
                 "Rostro no reconocido"
 
-
             txtEstado.setTextColor(
                 colorError
             )
 
 
+            cambiarColorIndicador(
+                colorError
+            )
+
+
+            txtTituloIdentidad.text =
+                "No se pudo verificar"
+
+
+            txtDescripcion.text =
+                "Mantén el rostro dentro del óvalo e inténtalo nuevamente."
+
+            txtDescripcion.visibility =
+                View.VISIBLE
+
+
             txtDni.text =
                 "DNI: --"
-
 
             txtNombre.text =
                 "Nombre: --"
@@ -1449,15 +1603,32 @@ class ReconocimientoFacialActivity :
             txtEstado.text =
                 mensaje
 
-
             txtEstado.setTextColor(
                 colorEsperando
             )
 
 
+            cambiarColorIndicador(
+                colorEsperando
+            )
+
+
+            txtTituloIdentidad.text =
+                "Verificación de identidad"
+
+            txtTituloIdentidad.visibility =
+                View.VISIBLE
+
+
+            txtDescripcion.text =
+                "Mantén el rostro de frente y con buena iluminación."
+
+            txtDescripcion.visibility =
+                View.VISIBLE
+
+
             txtDni.text =
                 "DNI: --"
-
 
             txtNombre.text =
                 "Nombre: --"
@@ -1496,15 +1667,29 @@ class ReconocimientoFacialActivity :
             txtEstado.text =
                 mensaje
 
-
             txtEstado.setTextColor(
                 colorCalidad
             )
 
 
+            cambiarColorIndicador(
+                colorCalidad
+            )
+
+
+            txtTituloIdentidad.text =
+                "Ajusta tu rostro"
+
+
+            txtDescripcion.text =
+                "Sigue la indicación para continuar con la verificación."
+
+            txtDescripcion.visibility =
+                View.VISIBLE
+
+
             txtDni.text =
                 "DNI: --"
-
 
             txtNombre.text =
                 "Nombre: --"
